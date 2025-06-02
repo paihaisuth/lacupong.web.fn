@@ -360,8 +360,6 @@ function switchRole(role) {
     // อัปเดต UI ตามบทบาท
     document.getElementById('placer-btn').classList.toggle('active', role === 'placer');
     document.getElementById('hunter-btn').classList.toggle('active', role === 'hunter');
-    document.getElementById('placer-instructions').style.display = role === 'placer' ? 'block' : 'none';
-    document.getElementById('hunter-instructions').style.display = role === 'hunter' ? 'block' : 'none';
 }
 
 /**
