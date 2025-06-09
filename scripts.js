@@ -289,7 +289,7 @@ function displayTreasureInfo(treasure) {
     infoHTML += `
         <p><strong>ภารกิจ:</strong> ${treasure.mission || 'ไม่ระบุ'}</p>
         <p><strong>ส่วนลด:</strong> ${treasure.discount || 'ไม่ระบุ'}%</p>
-        <p><strong>จำนวนกล่องที่เหลือ:</strong> ${treasure.remainingBoxes || 0}/${treasure.totalBoxes || 1}</p>
+        <p><strong>จำนวนคูปองที่เหลือ:</strong> ${treasure.remainingBoxes || 0}/${treasure.totalBoxes || 1}</p>
     `;
     
     document.getElementById('treasure-info').innerHTML = infoHTML;

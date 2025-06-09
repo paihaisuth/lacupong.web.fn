@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เกมล่าสมบัติ</title>
+    <title>เเผนที่เเสดงคูปอง</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="styles.css"/>
@@ -36,10 +36,11 @@
                 <button class="close-btn" id="close-place-modal">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
+                <div class="form-group" style="display: none;">
                     <label for="placement-date">วันที่วาง:</label>
-                    <input type="date" id="placement-date" required>
+                    <input type="date" id="placement-date">
                 </div>
+
                 <div class="form-group">
                     <label for="name">ชื่อร้าน:</label>
                     <input type="text" id="name" required>
@@ -53,7 +54,7 @@
                     <input type="text" id="face" >
                 </div>
                 <div class="form-group">
-                    <label for="mission">ภารกิจ:</label>
+                    <label for="mission">ภารกิจที่ต้องทำเพื่อรับคูปอง:</label>
                     <textarea id="mission" rows="3" required></textarea>
                 </div>
                 <div class="form-group">
@@ -61,7 +62,7 @@
                     <input type="number" id="discount" min="1" max="100" required>
                 </div>
                 <div class="form-group">
-                    <label for="total-boxes">จำนวนกล่อง:</label>
+                    <label for="total-boxes">จำนวนคูปอง:</label>
                     <input type="number" id="total-boxes" name="totalBoxes" min="1" value="1" required>
                 </div>
                 <div class="action-buttons">
