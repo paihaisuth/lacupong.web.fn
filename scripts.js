@@ -23,14 +23,7 @@ function initMap() {
     setupMapClickHandler(); // ตั้งค่าการจัดการคลิกบนแผนที่
 }
 
-// ======================
-// ฟังก์ชันย่อยสำหรับการทำงานต่างๆ (Helper Functions)
-// ======================
-
-/**
- * 1. ฟังก์ชันเริ่มต้นแผนที่พื้นฐาน
- * สร้างแผนที่ Leaflet และตั้งค่าพื้นฐาน
- */
+//เเสดงเเผนที่
 function initializeMap() {
     // ตั้งค่าตำแหน่งกลางแผนที่ (พิกัดประเทศไทย)
     const defaultCenter = [15.8700, 100.9925];
@@ -44,10 +37,7 @@ function initializeMap() {
     }).addTo(map);
 }
 
-/**
- * 2. ฟังก์ชันโหลดข้อมูลจาก localStorage
- * โหลดข้อมูลสมบัติจากที่เก็บในเบราว์เซอร์
- */
+//เเสดงคูปอง
 function loadTreasuresFromStorage() {
     try {
         const storedTreasures = localStorage.getItem('treasures');
@@ -130,20 +120,20 @@ function updateUserLocationOnMap(location) {
         map.removeLayer(window.userMarker);
     }
     
-    // สร้าง Marker ใหม่สำหรับตำแหน่งปัจจุบัน
+    // สร้าง Marker ใหม่สำหรับตำแหน่งปัจจุบัน (ไม่ให้คลิกได้)
     window.userMarker = L.marker([location.lat, location.lng], {
         icon: L.divIcon({
             className: 'current-location-icon',
             html: '📍', // ใช้อิโมจิเป็นไอคอน
             iconSize: [50, 50]
-        })
-    }).addTo(map)
-    .bindPopup("ตำแหน่งปัจจุบันของคุณ")
-    .openPopup();
-    
+        }),
+        interactive: false  // <<== ปิดการคลิก/โต้ตอบ
+    }).addTo(map);
+
     // ย้ายมุมมองแผนที่ไปที่ตำแหน่งปัจจุบัน (ซูมระดับ 20)
     map.setView([location.lat, location.lng], 20);
 }
+
 
 /**
  * 5. ฟังก์ชันตั้งค่าการคลิกบนแผนที่
@@ -167,10 +157,8 @@ function handleMapClickForPlacer(event) {
     showPlaceTreasureModal(); // แสดงโมดอลสำหรับวางสมบัติ
 }
 
-/**
- * 6. ฟังก์ชันโหลดและแสดงสมบัติบนแผนที่
- * ดึงข้อมูลสมบัติจากเซิร์ฟเวอร์และแสดงบนแผนที่
- */
+
+//เเสดงคูปอง
 async function loadTreasures() {
     try {
         clearTreasureMarkers(); // ลบเครื่องหมายสมบัติบนแผนที่ก่อน
@@ -231,27 +219,44 @@ function groupTreasuresByLocation(treasures) {
  * @param {Object} locationGroups - กลุ่มสมบัติที่ตำแหน่งเดียวกัน
  */
 function createTreasureMarkers(locationGroups) {
+    const usedPositions = new Set(); // ใช้เก็บตำแหน่งที่ใช้แล้ว เพื่อป้องกันซ้ำ
+
     Object.values(locationGroups).forEach(treasureGroup => {
-        // ตรวจสอบว่า remainingBoxes > 0
         const remainingBoxes = treasureGroup.reduce((sum, t) => sum + (t.remainingBoxes || 0), 0);
         if (remainingBoxes <= 0) return;
-        
-        const position = treasureGroup[0];
-        
-        // สร้าง Marker
-        const marker = L.marker([position.lat, position.lng], {
+
+        let lat = treasureGroup[0].lat;
+        let lng = treasureGroup[0].lng;
+
+        let key = `${lat.toFixed(6)}_${lng.toFixed(6)}`;
+
+        // ถ้าตำแหน่งถูกใช้แล้ว → ขยับตำแหน่งเล็กน้อยจนกว่าจะไม่ซ้ำ
+        const maxAttempts = 10;
+        let attempts = 0;
+        while (usedPositions.has(key) && attempts < maxAttempts) {
+            const offset = 0.0001;
+            const randomLatOffset = (Math.random() - 0.5) * offset;
+            const randomLngOffset = (Math.random() - 0.5) * offset;
+            lat += randomLatOffset;
+            lng += randomLngOffset;
+            key = `${lat.toFixed(6)}_${lng.toFixed(6)}`;
+            attempts++;
+        }
+
+        usedPositions.add(key); // บันทึกตำแหน่งที่ใช้แล้ว
+
+        const marker = L.marker([lat, lng], {
             icon: createStackedIcon(remainingBoxes)
         }).addTo(map);
-        
-        // เก็บข้อมูลทั้งหมดที่ตำแหน่งนี้
+
         marker.treasuresAtLocation = treasureGroup;
-        
+
         marker.on('click', () => {
             if (currentRole === 'hunter') {
                 handleTreasureMarkerClick(marker, treasureGroup);
             }
         });
-        
+
         treasureMarkers.push(marker);
     });
 }
@@ -271,8 +276,9 @@ function handleTreasureMarkerClick(marker, treasureGroup) {
     document.getElementById('view-treasure-modal').style.display = 'flex';
 }
 
+
 /**
- * แสดงข้อมูลสมบัติ
+ * เเสดงข้อมูลคูปอง
  * @param {Object} treasure - ข้อมูลสมบัติที่จะแสดง
  */
 function displayTreasureInfo(treasure) {
@@ -286,14 +292,23 @@ function displayTreasureInfo(treasure) {
     if (treasure.ig) infoHTML += `<p><strong>ไอจีร้าน:</strong> ${treasure.ig}</p>`;
     if (treasure.face) infoHTML += `<p><strong>เฟสร้าน:</strong> ${treasure.face}</p>`;
     
+    // แสดงส่วนลด (ถ้ามี % ก็ใช้ %, ถ้าไม่มีให้แสดงเป็น บาท)
+    let discountText = 'ไม่ระบุ';
+    if (treasure.discount) {
+        discountText = `${treasure.discount}%`;
+    } else if (treasure.discountBaht) {
+        discountText = `${treasure.discountBaht} บาท`;
+    }
+
     infoHTML += `
         <p><strong>ภารกิจ:</strong> ${treasure.mission || 'ไม่ระบุ'}</p>
-        <p><strong>ส่วนลด:</strong> ${treasure.discount || 'ไม่ระบุ'}%</p>
+        <p><strong>ส่วนลด:</strong> ${discountText}</p>
         <p><strong>จำนวนคูปองที่เหลือ:</strong> ${treasure.remainingBoxes || 0}/${treasure.totalBoxes || 1}</p>
     `;
     
     document.getElementById('treasure-info').innerHTML = infoHTML;
 }
+
 
 /**
  * 8. สร้างไอคอนกล่องสมบัติ
@@ -338,8 +353,6 @@ function setupEventListeners() {
     // องค์ประกอบ DOM
     const placerBtn = document.getElementById('placer-btn');
     const hunterBtn = document.getElementById('hunter-btn');
-    const placerInstructions = document.getElementById('placer-instructions');
-    const hunterInstructions = document.getElementById('hunter-instructions');
     
     // การเปลี่ยนบทบาท
     placerBtn.addEventListener('click', () => switchRole('placer'));
@@ -424,9 +437,48 @@ function showModal(modalId) {
     document.getElementById(modalId).style.display = 'flex';
 }
 
-/**
- * บันทึกสมบัติใหม่
- */
+
+
+//จัดการส่วนลด
+function setupDiscountInputs() {
+  const discountPercent = document.getElementById('discount');
+  const discountBaht = document.getElementById('discount-baht');
+
+  function validateInput(e) {
+    let value = e.target.value;
+
+    if (value < 0) {
+      e.target.value = '';
+      return;
+    }
+
+    if (value.includes('.')) {
+      e.target.value = Math.floor(parseFloat(value));
+    }
+  }
+
+  discountPercent.addEventListener('input', () => {
+    if (discountPercent.value !== '') {
+      discountBaht.value = '';
+    }
+    validateInput({ target: discountPercent });
+  });
+
+  discountBaht.addEventListener('input', () => {
+    if (discountBaht.value !== '') {
+      discountPercent.value = '';
+    }
+    validateInput({ target: discountBaht });
+  });
+}
+
+//เรีกยกใช้จัดการส่วนลด
+window.addEventListener('DOMContentLoaded', () => {
+  setupDiscountInputs();
+});
+
+
+// วางคูปอง
 async function saveTreasure() {
     const saveButton = document.getElementById('save-treasure');
     saveButton.disabled = true; // ปิดปุ่มชั่วคราว
@@ -437,34 +489,14 @@ async function saveTreasure() {
         return;
     }
 
-    const formData = getTreasureFormData();
+    // ดึงค่า discount ทั้งสองช่อง
+    const discountPercentValue = document.getElementById('discount').value.trim();
+    const discountBahtValue = document.getElementById('discount-baht').value.trim();
 
-    if (!validateTreasureForm(formData)) {
-        alert('กรุณากรอกข้อมูลให้ครบถ้วน');
-        saveButton.disabled = false;
-        return;
-    }
+    console.log('Discount %:', discountPercentValue);
+    console.log('Discount Baht:', discountBahtValue);
 
-    try {
-        await saveTreasuresToServer(formData);
-        await loadTreasures();
-        resetTreasureForm();
-        hideModal('place-treasure-modal');
-    } catch (error) {
-        console.error("Error saving treasure:", error);
-        alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-    } finally {
-        saveButton.disabled = false; // เปิดปุ่มอีกครั้ง ไม่ว่าจะสำเร็จหรือผิดพลาด
-    }
-}
-
-
-/**
- * ดึงข้อมูลจากฟอร์มวางสมบัติ
- * @returns {Object} ข้อมูลจากฟอร์ม
- */
-function getTreasureFormData() {
-    return {
+    const formData = {
         lat: selectedPosition.lat,
         lng: selectedPosition.lng,
         boxCount: parseInt(document.getElementById('total-boxes').value) || 1,
@@ -472,42 +504,35 @@ function getTreasureFormData() {
         ig: document.getElementById('ig').value.trim(),
         face: document.getElementById('face').value.trim(),
         mission: document.getElementById('mission').value.trim(),
-        discount: document.getElementById('discount').value.trim(),
+        discount: discountPercentValue,    // ส่วนลดเป็น %
+        discountBaht: discountBahtValue,   // ส่วนลดเป็น บาท
         placementDate: document.getElementById('placement-date').value
     };
-}
 
-/**
- * ตรวจสอบความถูกต้องของฟอร์ม
- * @param {Object} formData - ข้อมูลจากฟอร์ม
- * @returns {Boolean} ถูกต้องหรือไม่
- */
-function validateTreasureForm(formData) {
-    return formData.name && formData.mission && formData.discount && formData.placementDate;
-}
+    console.log('Form Data:', formData);
 
+    // ตรวจสอบฟอร์ม: ให้กรอกอย่างน้อย 1 ช่องส่วนลด (discount หรือ discountBaht)
+    if (!(formData.name && formData.mission && formData.placementDate && (formData.discount || formData.discountBaht))) {
+        alert('กรุณากรอกข้อมูลให้ครบถ้วน รวมถึงใส่ส่วนลดอย่างน้อยหนึ่งช่อง');
+        saveButton.disabled = false;
+        return;
+    }
 
-let lastSubmitTime = 0; // ตัวแปรเก็บเวลาสุดท้ายที่ส่งข้อมูล
-
-/**
- * บันทึกสมบัติลงเซิร์ฟเวอร์ พร้อมป้องกันสแปม
- * @param {Object} formData - ข้อมูลสมบัติที่จะบันทึก
- */
-async function saveTreasuresToServer(formData) {
-    // การป้องกันการทำซ้ำคำขอในระยะเวลา 1 วินาที
+    // ป้องกันสแปม (ส่งซ้ำภายใน 1 วินาที)
     const currentTime = Date.now();
-    if (currentTime - lastSubmitTime < 1000) {
-        return; // หยุดการส่งคำขอหากส่งภายในเวลาไม่ถึง 1 วินาที
+    if (saveTreasure.lastSubmitTime && currentTime - saveTreasure.lastSubmitTime < 1000) {
+        saveButton.disabled = false;
+        return;
     }
-    
-    lastSubmitTime = currentTime; // อัปเดตเวลาล่าสุด
+    saveTreasure.lastSubmitTime = currentTime;
 
-    // การตรวจสอบข้อมูลพื้นฐาน
+    // ตรวจสอบข้อมูลพื้นฐานอีกครั้ง
     if (!formData.lat || !formData.lng || !formData.placementDate || !formData.name || !formData.mission) {
-        return; // หยุดหากข้อมูลไม่ครบ
+        saveButton.disabled = false;
+        return;
     }
 
-    // เตรียมข้อมูลสมบัติที่จะส่ง
+    // เตรียมข้อมูลสำหรับส่ง
     const treasureData = {
         lat: formData.lat,
         lng: formData.lng,
@@ -516,10 +541,13 @@ async function saveTreasuresToServer(formData) {
         ig: formData.ig,
         face: formData.face,
         mission: formData.mission,
-        discount: formData.discount,
-        totalBoxes: formData.boxCount || 1,
-        remainingBoxes: formData.boxCount || 1 // ตั้งค่าเริ่มต้นเท่ากับ totalBoxes
+        discount: formData.discount,       // ส่งทั้งสองช่องไปเลย
+        discountBaht: formData.discountBaht,
+        totalBoxes: formData.boxCount,
+        remainingBoxes: formData.boxCount
     };
+
+    console.log('Data to send:', treasureData);
 
     try {
         const response = await fetch(`${BASE_URL}/api/treasures`, {
@@ -528,16 +556,28 @@ async function saveTreasuresToServer(formData) {
             body: JSON.stringify(treasureData)
         });
 
+        console.log('Response status:', response.status);
+
         if (!response.ok) throw new Error('Failed to save treasure');
 
-        // หากบันทึกสำเร็จ, ปิดฟอร์มอัตโนมัติ
-        closePlaceTreasureModal(); // ฟังก์ชันที่ใช้ในการปิด Modal หรือฟอร์ม
+        // โหลดข้อมูลใหม่
+        await loadTreasures();
+
+        // รีเซ็ตฟอร์ม
+        resetTreasureForm();
+
+        // ปิด Modal
+        hideModal('place-treasure-modal');
 
     } catch (error) {
         console.error("Error saving treasure:", error);
-        // คุณสามารถใส่การแสดงข้อความผิดพลาดที่นี่ (เช่น console.log) แทนการใช้ alert
+        alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+    } finally {
+        saveButton.disabled = false; // เปิดปุ่มอีกครั้ง
     }
 }
+
+
 
 /**
  * ปิด Modal หรือฟอร์มที่เปิดอยู่
@@ -557,7 +597,7 @@ function closePlaceTreasureModal() {
 
 
 /**
- * รีเซ็ตฟอร์มวางสมบัติ
+ * รีเซ็ตฟอร์มวางคูปอง
  */
 function resetTreasureForm() {
     document.getElementById('name').value = '';
@@ -565,12 +605,11 @@ function resetTreasureForm() {
     document.getElementById('face').value = '';
     document.getElementById('mission').value = '';
     document.getElementById('discount').value = '';
+    document.getElementById('discount-baht').value = '';
     document.getElementById('total-boxes').value = '1';
 }
 
-/**
- * ส่งหลักฐานการพบสมบัติ
- */
+//ส่งหลักฐานภาพหลักฐาน
 async function submitProof() {
     const submitButton = document.getElementById('submit-proof');
     submitButton.disabled = true; // ปิดปุ่มชั่วคราว
@@ -600,10 +639,7 @@ async function submitProof() {
     }
 }
 
-
-/**
- * อัปเดตสถานะสมบัติเมื่อถูกเคลม
- */
+//ใช้คูปอง
 async function updateTreasureStatus() {
     try {
         const response = await fetch(`${BASE_URL}/api/treasures/${selectedTreasure._id}`, {
@@ -657,16 +693,23 @@ function generateDiscountCode() {
     return code;
 }
 
-/**
- * เเสดงข้อมูลที่ต้องเเคปเเชทให้ทางร้าน
- */
+
+//ส่งหลักฐานรหัสคูปองที่ได้รับ
 function displayDiscountCode() {
     const discountCode = generateDiscountCode(); // 🔐 สร้างรหัสสุ่ม
 
     // แสดงข้อมูลร้าน
     document.getElementById('shop-name-display').textContent = selectedTreasure.name || 'ไม่ระบุ';
     document.getElementById('mission-display').textContent = selectedTreasure.mission || 'ไม่ระบุ';
-    document.getElementById('discount-display').textContent = (selectedTreasure.discount || '0') + '%';
+
+    // ✅ ปรับให้แสดงส่วนลด % หรือ บาท ตามที่มีข้อมูล
+    let discountText = 'ไม่ระบุ';
+    if (selectedTreasure.discount) {
+        discountText = `${selectedTreasure.discount}%`;
+    } else if (selectedTreasure.discountBaht) {
+        discountText = `${selectedTreasure.discountBaht} บาท`;
+    }
+    document.getElementById('discount-display').textContent = discountText;
 
     // 🆕 แสดงรหัสส่วนลด
     const discountCodeElement = document.getElementById('discount-code-display');
@@ -705,8 +748,8 @@ function displayDiscountCode() {
             console.error("เกิดข้อผิดพลาดในการแคปหน้าจอ:", err);
         });
     }, 1000); // รอ modal แสดงผล 1 วิ ก่อน capture
-    
 }
+
 
 /**
  * รีเซ็ตฟอร์มส่งหลักฐาน

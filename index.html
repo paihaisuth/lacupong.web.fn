@@ -15,8 +15,9 @@
 
 </head>
 <body>
+        
+    <!-- เลือกประภเทผู้ใช้งาน -->
     <div class="container">
-
         <div class="role-selector">
             <button id="placer-btn" class="role-btn active">วางคูปอง</button>
             <button id="hunter-btn" class="role-btn">หาคูปอง</button>
@@ -28,14 +29,15 @@
         </div>
     </div>
     
-    <!-- Modal สำหรับการวางสมบัติ -->
+    <!-- ฟอรมวางคูปอง -->
     <div class="modal" id="place-treasure-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">วางสมบัติ</h3>
+                <h3 class="modal-title">วางคูปอง</h3>
                 <button class="close-btn" id="close-place-modal">&times;</button>
             </div>
             <div class="modal-body">
+
                 <div class="form-group" style="display: none;">
                     <label for="placement-date">วันที่วาง:</label>
                     <input type="date" id="placement-date">
@@ -57,10 +59,23 @@
                     <label for="mission">ภารกิจที่ต้องทำเพื่อรับคูปอง:</label>
                     <textarea id="mission" rows="3" required></textarea>
                 </div>
-                <div class="form-group">
-                    <label for="discount">ส่วนลด (%):</label>
-                    <input type="number" id="discount" min="1" max="100" required>
+
+                <p id="warning-message" style="color: red; margin-top: 0.5rem;">
+                    เลือกกรอกข้อมูลส่วนลด 1 ช่อง
+                </p>
+
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="discount">ส่วนลด (%):</label>
+                        <input type="number" id="discount" >
+                    </div>
+
+                    <div class="form-group" style="flex: 1;">
+                        <label for="discount-baht">ส่วนลด (บาท):</label>
+                        <input type="number" id="discount-baht"  >
+                    </div>
                 </div>
+
                 <div class="form-group">
                     <label for="total-boxes">จำนวนคูปอง:</label>
                     <input type="number" id="total-boxes" name="totalBoxes" min="1" value="1" required>
@@ -73,7 +88,7 @@
         </div>
     </div>
     
-    <!-- Modal สำหรับดูรายละเอียดสมบัติ -->
+    <!-- เเสดงรายละเอียดข้อมูลที่พบ -->
     <div class="modal" id="view-treasure-modal">
         <div class="modal-content">
             <div class="modal-header">
