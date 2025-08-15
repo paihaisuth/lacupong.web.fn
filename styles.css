@@ -1,312 +1,299 @@
+/* =================================================================== */
+/*                      FOUNDATIONAL & THEME STYLES                    */
+/* =================================================================== */
+:root {
+    --primary-color: #8D6E63;
+    --primary-dark-color: #6D4C41;
+    --background-color: #F7F5F4;
+    --surface-color: #FFFFFF;
+    --text-color: #424242;
+    --text-light-color: #757575;
+    --border-color: #e0e0e0;
+    --white: #FFFFFF;
+    --grey-light-bg: #f2f2f2;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
 
 body {
-    font-family: 'Arial', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f0f0f0;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-header {
-    background-color: #8B4513;
-    color: white;
-    padding: 20px 0;
-    text-align: center;
-    margin-bottom: 30px;
-    border-radius: 5px;
-}
-
-h1 {
-    margin: 0;
-}
-
-.role-selector {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 20px;
-}
-
-.role-btn {
-    padding: 10px 20px;
-    margin: 0 10px;
-    background-color: #C19A6B;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    font-family: 'Kanit', sans-serif;
+    color: var(--text-color);
     font-size: 16px;
-    transition: background-color 0.3s;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
 }
 
-.role-btn.active {
-    background-color: #A96300;
-}
-
-.role-btn:hover {
-    background-color: #A96300;
-}
-
-.map-container {
-    background-color: #fff;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1; /* อยู่ล่างสุด */
-}
-
-#map {
-    height: 100%;
-    width: 100%;
-    z-index: -1; /* อยู่ล่างสุด */
-}
-.modal {
-    display: none;
-    position: fixed;
-    overflow-y: auto; /* ถ้ามีข้อมูลยาวเกินขนาดให้สามารถเลื่อนขึ้นลงได้ */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 100;
-    justify-content: center;
-    align-items: center;
-}
-
-.modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    max-height: 100%; /* ตั้งความสูงสูงสุดให้ไม่เกิน 80% ของหน้าจอ */
-    width: 80%;
-    overflow-y: auto; /* ถ้ามีข้อมูลยาวเกินขนาดให้สามารถเลื่อนขึ้นลงได้ */
-    max-width: 500px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-}
-
-.modal-title {
-    margin: 0;
-    font-size: 16px;
-}
-
-.modal-body p{
-    font-size: 14px;
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #7f8c8d;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    font-size: 14px;
-}
-
-input, textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
-}
-
-.action-buttons {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 20px;
-}
-
-.action-buttons2 {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-}
-
-.btn {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.btn2 {
-    padding: 10px;
-    width: 100%; /* ความกว้างเต็มพื้นที่ */
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.btn-primary {
-    background-color: #556B2F;
-    color: white;
-}
-
-.btn-secondary {
-    background-color: #B22222;
-    color: white;
-}
-
-.btn-success {
-    background-color: #556B2F;
-    color: white;
-}
-
-.treasure-info {
-    margin-bottom: 15px;
-}
-
-.treasure-info p {
-    margin: 5px 0;
-}
-
-/* ปรับ parent container ให้ใช้ flexbox */
-.image-container {
-    display: flex;
-    justify-content: center; /* จัดกลางในแนวนอน */
-    align-items: center; /* จัดกลางในแนวตั้ง */
-    width: 100%; /* ใช้ความกว้างเต็มที่ */
-    position: relative;
-}
-
-.preview-image {
-    max-width: 100%;
-    max-height: 350px;
-    margin-top: 10px;
-    display: block; /* ทำให้แสดงภาพ */
-}
-
-
-.discount-code {
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-    color: #e74c3c;
-    margin: 20px 0;
-    padding: 15px;
-    background-color: #f9f9f9;
-    border-radius: 5px;
-    border: 1px dashed #e74c3c;
-}
-
-.instructions {
-    background-color: #fff;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-.instructions p{
-    font-size: 14px;
-}
-
-.treasure-icon {
-    background-color: #f39c12;
-    border: 2px solid #fff;
-    color: white;
-    border-radius: 50%;
-    text-align: center;
-    line-height: 30px;
-    font-weight: bold;
-}
-
-.current-location-icon {
-    text-align: center;
-    font-size: 20px;
-}
+/* =================================================================== */
+/*                             MAIN LAYOUT                             */
+/* =================================================================== */
+.container, .map-container { height: 100%; }
+#map { width: 100%; height: 100%; z-index: 1; }
 
 .loading-message {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(255, 255, 255, 0.9);
-    padding: 20px;
-    border-radius: 5px;
-    z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white; padding: 15px 25px;
+    border-radius: 12px; z-index: 10;
 }
 
-.box-number {
-    font-size: 12px;
-    position: absolute;
-    bottom: -5px;
-    right: -5px;
-    background: white;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
+/* =================================================================== */
+/*                 BOTTOM APP BAR (Full Width Always)                  */
+/* =================================================================== */
+.bottom-app-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    width: 100%; height: 75px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    border: 1px solid #ccc;
+    padding: 0 15px;
+    z-index: 1000;
 }
 
+.bar-icon-btn {
+    background: none; border: none; cursor: pointer;
+    padding: 10px; display: flex;
+    color: var(--text-light-color);
+}
+.bar-icon-btn:hover { color: var(--primary-color); }
+.bar-icon-btn svg {
+    width: 26px; height: 26px; stroke-width: 2.25;
+    transition: transform 0.2s ease;
+}
+.bar-icon-btn:active svg { transform: scale(0.85); }
 
+.role-switch-container {
+    flex-grow: 1; display: flex; justify-content: center;
+}
+.role-switch {
+    width: 220px; height: 44px;
+    background-color: #EFEBE9;
+    border-radius: 22px;
+    position: relative;
+    display: flex; user-select: none;
+}
+.role-option {
+    font-family: 'Kanit', sans-serif;
+    width: 50%;
+    display: flex; justify-content: center; align-items: center;
+    font-weight: 500; font-size: 15px;
+    z-index: 2; cursor: pointer;
+    transition: color 0.4s ease;
+    color: var(--text-light-color);
+    background: none; border: none;
+}
+.role-option.active { color: var(--white); }
 
-.info-row {
+#switch-slider {
+    position: absolute; top: 2px;
+    left: 2px; /* Default position on placer */
+    width: 106px; height: 40px;
+    background-color: var(--primary-color);
+    border-radius: 20px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    transition: left 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    z-index: 1;
+}
+
+/* =================================================================== */
+/*                     MAP ICON STYLES (Smaller Version)               */
+/* =================================================================== */
+.treasure-icon {
+    /* CHANGED: ลดขนาดฟอนต์ของอิโมจิ */
+    font-size: 20px; 
+    position: relative;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.treasure-count {
+    position: absolute;
+    /* CHANGED: ปรับตำแหน่งให้ชิดขึ้น */
+    top: -4px; 
+    right: -6px;
+    background-color: #D32F2F;
+    color: white;
+    /* CHANGED: ลดขนาดฟอนต์ของตัวเลข */
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 50%;
+    /* CHANGED: ลด Padding ให้วงกลมเล็กลง */
+    padding: 1px 4px; 
+    border: 1px solid white;
+}
+.current-location-icon {
+    /* CHANGED: ลดขนาดฟอนต์ให้พอดีกับขนาดไอคอนใหม่ */
+    font-size: 24px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+/* =================================================================== */
+/*                      MODAL SYSTEM (MOBILE-FIRST)                    */
+/* =================================================================== */
+.modal {
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2000; display: flex;
+    justify-content: center; align-items: flex-end;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal.show { opacity: 1; visibility: visible; }
+.modal-content {
+    background-color: var(--surface-color);
+    width: 100%; max-height: 85vh; 
+    padding: 20px;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+    overflow-y: auto; transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+}
+.modal.show .modal-content { transform: translateY(0); }
+.modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+.modal-title { font-size: 1.25rem; font-weight: 700; color: var(--primary-color); }
+.close-btn {
+    font-size: 2rem; line-height: 1; border: none;
+    background: none; color: var(--text-light-color); cursor: pointer;
+}
+
+/* =================================================================== */
+/*                       FORM ELEMENTS & BUTTONS                       */
+/* =================================================================== */
+.form-group { 
+    margin-bottom: 15px; 
+}
+.form-group label { 
+    display: block; 
+    margin-bottom: 8px; 
+    font-weight: 500; 
+}
+input[type="text"], input[type="number"], input[type="file"], textarea {
+    width: 100%; 
+    padding: 12px; 
+    border: 1px solid var(--border-color);
+    border-radius: 12px; background-color: var(--grey-light-bg);
+    font-size: 16px; font-family: 'Kanit', sans-serif;
+}
+textarea { 
+    resize: vertical; 
+    min-height: 80px; 
+}
+.action-buttons, .action-buttons2 {
+    margin-top: 25px; 
     display: flex;
-    align-items: baseline;
+    flex-direction: column; gap: 12px;
+}
+.btn, .btn2 {
+    font-family: 'Kanit', sans-serif; padding: 12px 20px;
+    border-radius: 12px; font-size: 16px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent;
+    width: 100%; text-align: center;
+    transition: background-color 0.3s, color 0.3s;
+}
+.btn-primary { background-color: var(--primary-color); color: var(--surface-color); }
+.btn-primary:hover { background-color: var(--primary-dark-color); }
+.btn-secondary { background-color: transparent; color: var(--text-light-color); border-color: var(--border-color); }
+.btn-success { background-color: #4CAF50; color: white; }
+.btn2 { background-color: var(--primary-color); color: var(--surface-color); }
+
+/* =================================================================== */
+/*                     NEW: IMAGE UPLOADER STYLES                      */
+/* =================================================================== */
+.image-upload-box {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    background-color: var(--grey-light-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    margin-top: 8px;
+    overflow: hidden;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.image-upload-box:hover {
+    border-color: var(--primary-color);
+    background-color: #e9e5e3;
+}
+.image-upload-box input[type="file"] { display: none; }
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text-light-color);
+    pointer-events: none;
+}
+.upload-placeholder svg {
+    width: 48px;
+    height: 48px;
+    stroke-width: 1.5;
     margin-bottom: 8px;
 }
-
-.info-row label {
-    margin-right: 2px;
-    min-width: 30px; /* ปรับตามความกว้างที่ต้องการ */
-    font-size: 14px;
-}
-.info-row span {
-    font-size: 14px;
+.image-upload-box .preview-image {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
-.mission-content {
-    flex: 1;
-    word-break: break-word; /* สำหรับข้อความยาว */
+/* =================================================================== */
+/*                       SPECIFIC MODAL STYLES                       */
+/* =================================================================== */
+#treasure-info hr { border: 0; border-top: 1px solid #eee; margin: 16px 0; }
+#treasure-info p { margin-bottom: 10px; line-height: 1.6; }
+#treasure-info strong { color: var(--primary-dark-color); }
+.image-container {
+    width: 100%; margin-top: 10px; border: 2px dashed var(--border-color);
+    border-radius: 12px; padding: 10px; min-height: 150px;
+    display: flex; justify-content: center; align-items: center;
 }
-
-/*ส่วนลด*/
+.preview-image { max-width: 100%; max-height: 250px; object-fit: contain; border-radius: 8px; display: none; }
+.proof-section { margin-bottom: 20px; }
+.shop-info { margin-bottom: 20px; }
+.info-row { margin-bottom: 15px; }
+.info-row label { font-weight: 500; color: var(--text-light-color); }
+.info-row span { display: block; font-size: 1.1rem; margin-top: 4px; }
 .discount-code {
-    font-weight: bold;
-    font-size: 1.2em;
-    color: #e91e63;
-    width: 100%; /* ความกว้างเต็ม container */
-    display: block; /* เพื่อให้ width มีผลใน inline element */
+    display: block; width: 100%; background-color: #F1EAE8;
+    color: var(--primary-dark-color); font-size: 2rem !important;
+    font-weight: 700; text-align: center; padding: 15px;
+    border-radius: 12px; letter-spacing: 2px;
 }
-/*ส่วนลด*/
 
-/*ภารกิจ*/
-#treasure-info p {
-    word-wrap: break-word; /* ทำให้ข้อความยาวเกินไปสามารถตัดบรรทัดใหม่ได้ */
-    overflow-wrap: break-word; /* อีกวิธีในการจัดการข้อความยาว */
-    white-space: normal; /* ป้องกันไม่ให้ข้อความยืดออกไปเกินพื้นที่ */
+/* =================================================================== */
+/*                    DESKTOP/TABLET MEDIA QUERIES                     */
+/* =================================================================== */
+@media (min-width: 768px) {
+    /*
+     * REMOVED: The .bottom-app-bar styles that made it a floating pill.
+     * Now it will remain full-width on all screen sizes.
+    */
+    .modal { align-items: center; }
+    .modal-content {
+        width: 90%; max-width: 500px;
+        border-radius: 20px;
+        transform: translateY(0);
+        padding: 20px;
+    }
+    .modal-header {
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+    }
+    .action-buttons { flex-direction: row; justify-content: flex-end; }
+    .btn, .btn2 { width: auto; }
 }
-/*ภารกิจ*/
+
 

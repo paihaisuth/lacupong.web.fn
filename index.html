@@ -6,43 +6,63 @@
     <title>เเผนที่เเสดงคูปอง</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css"/>
 
+    <!-- html2canvas for Screenshot -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
-
     
+    <!-- Lucide Icons Framework -->
+    <script src="https://unpkg.com/lucide@0.390.0"></script>
 
 </head>
 <body>
         
-    <!-- เลือกประภเทผู้ใช้งาน -->
+    <!-- Main container for map -->
     <div class="container">
-        <div class="role-selector">
-            <button id="placer-btn" class="role-btn active">วางคูปอง</button>
-            <button id="hunter-btn" class="role-btn">หาคูปอง</button>
-        </div>
-        
         <div class="map-container">
             <div id="map"></div>
             <div class="loading-message" id="loading-message">กำลังโหลดแผนที่และตำแหน่งของคุณ...</div>
         </div>
     </div>
+
+    <!-- ======================================================= -->
+    <!--              BOTTOM APP BAR (Mobile First)              -->
+    <!-- ======================================================= -->
+    <div class="bottom-app-bar">
+        <!-- 1. Refresh Button -->
+        <button id="refresh-btn" class="bar-icon-btn" title="โหลดข้อมูลใหม่">
+            <i data-lucide="rotate-cw"></i>
+        </button>
+
+        <!-- 2. Role Selector (The sliding pill design) -->
+        <div class="role-switch-container">
+            <div class="role-switch">
+                <div id="switch-slider"></div>
+                <!-- Default active button is hunter, but JS will manage it -->
+                <button id="placer-btn" class="role-option" data-role="placer">วางคูปอง</button>
+                <button id="hunter-btn" class="role-option" data-role="hunter">หาคูปอง</button>
+            </div>
+        </div>
+
+        <!-- 3. Current Location Button -->
+        <button id="location-btn" class="bar-icon-btn" title="ตำแหน่งของฉัน">
+            <i data-lucide="locate-fixed"></i>
+        </button>
+    </div>
+    
+    <!-- ======================================================= -->
+    <!--                       MODALS                            -->
+    <!-- ======================================================= -->
     
     <!-- ฟอรมวางคูปอง -->
     <div class="modal" id="place-treasure-modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">วางคูปอง</h3>
-                <button class="close-btn" id="close-place-modal">&times;</button>
+                <button class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
-
-                <div class="form-group" style="display: none;">
-                    <label for="placement-date">วันที่วาง:</label>
-                    <input type="date" id="placement-date">
-                </div>
-
                 <div class="form-group">
                     <label for="name">ชื่อร้าน:</label>
                     <input type="text" id="name" required>
@@ -59,30 +79,24 @@
                     <label for="mission">ภารกิจที่ต้องทำเพื่อรับคูปอง:</label>
                     <textarea id="mission" rows="3" required></textarea>
                 </div>
-
-                <p id="warning-message" style="color: red; margin-top: 0.5rem;">
-                    เลือกกรอกข้อมูลส่วนลด 1 ช่อง
-                </p>
-
+                <p style="color: #666; margin-bottom: 1rem; font-size: 0.9rem;">กรุณาเลือกกรอกส่วนลดเพียง 1 ช่อง</p>
                 <div style="display: flex; gap: 1rem;">
                     <div class="form-group" style="flex: 1;">
                         <label for="discount">ส่วนลด (%):</label>
                         <input type="number" id="discount" >
                     </div>
-
                     <div class="form-group" style="flex: 1;">
                         <label for="discount-baht">ส่วนลด (บาท):</label>
                         <input type="number" id="discount-baht"  >
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label for="total-boxes">จำนวนคูปอง:</label>
-                    <input type="number" id="total-boxes" name="totalBoxes" min="1" value="1" required>
+                    <input type="number" id="total-boxes" min="1" value="1" required>
                 </div>
                 <div class="action-buttons">
-                    <button class="btn btn-secondary" id="cancel-place">ยกเลิก</button>
-                    <button class="btn btn-primary" id="save-treasure" type="submit">บันทึก</button>
+                    <button class="btn btn-secondary">ยกเลิก</button>
+                    <button class="btn btn-primary" id="save-treasure">บันทึก</button>
                 </div>
             </div>
         </div>
@@ -93,78 +107,87 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">พบคูปอง!</h3>
-                <button class="close-btn" id="close-view-modal">&times;</button>
+                <button class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="treasure-info" id="treasure-info">
-                    <!-- เติมโดย JavaScript -->
-                </div>
+                <div class="treasure-info" id="treasure-info"></div>
                 <div class="action-buttons">
-                    <button class="btn btn-secondary" id="cancel-view">ยกเลิก</button>
-                    <button class="btn btn-primary" id="next-step">ถัดไป</button>
+                    <button class="btn btn-secondary">ยกเลิก</button>
+                    <button class="btn btn-primary" id="next-step">ทำภารกิจ</button>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Modal สำหรับการส่งหลักฐาน -->
+    <!-- Modal สำหรับการส่งหลักฐาน (ฉบับปรับปรุง) -->
     <div class="modal" id="submit-proof-modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">ส่งหลักฐานภารกิจ</h3>
-                <button class="close-btn" id="close-proof-modal">&times;</button>
+                <button class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="proof-image">อัปโหลดภาพหลักฐาน:</label>
-                    <input type="file" id="proof-image" accept="image/*" required>
-                    <div class="image-container">
+                    <label>อัปโหลดภาพหลักฐาน:</label>
+                    
+                    <!-- NEW: Uploader Box Structure -->
+                    <div id="image-upload-box" class="image-upload-box">
+                        <!-- The actual file input is hidden -->
+                        <input type="file" id="proof-image" accept="image/*" required>
+                        
+                        <!-- The placeholder with the '+' icon -->
+                        <div id="upload-placeholder" class="upload-placeholder">
+                            <i data-lucide="plus"></i>
+                            <span>เพิ่มรูปภาพ</span>
+                        </div>
+
+                        <!-- The preview image will appear here -->
                         <img id="proof-preview" class="preview-image">
                     </div>
+
                 </div>
                 <div class="action-buttons">
-                    <button class="btn btn-secondary" id="cancel-proof">กลับ</button>
-                    <button class="btn btn-success" id="submit-proof">ส่ง</button>
+                    <button class="btn btn-secondary">กลับ</button>
+                    <button class="btn btn-success" id="submit-proof">ส่งหลักฐาน</button>
                 </div>
             </div>
         </div>
     </div>
     
     <!-- Modal สำหรับแสดงหลักฐาน -->
+    <!-- Modal สำหรับแสดงหลักฐาน (ฉบับแก้ไข) -->
     <div class="modal" id="discount-code-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">เเคปภาพหน้านี้เเล้วส่งให้ทางร้าน</h3>
-                <button class="close-btn" id="close-code-modal">&times;</button>
+                <h3 class="modal-title">เเคปภาพหน้านี้ส่งให้ทางร้าน</h3>
+                <button class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
 
-                <div class="shop-info">
-
-                    <div class="info-row">
-                        <span id="discount-code-display" class="discount-code"></span>
-                    </div>
-                    
-                    <div class="info-row">
-                        <label>ชื่อร้าน:</label>
-                        <span id="shop-name-display"></span>
-                    </div>       
-
-                    <div class="info-row">
-                        <label for="mission-display">ภารกิจ:</label>
-                        <span id="mission-display" class="mission-content"></span>
-                    </div>
-
-                    <div class="info-row">
-                        <label>ส่วนลด:</label>
-                        <span id="discount-display"></span>
-                    </div>
-                </div>
-                
+                <!-- MOVED: ส่วนหลักฐานภารกิจ ถูกย้ายขึ้นมาบนสุด -->
                 <div class="proof-section">
                     <label>หลักฐานภารกิจ</label>
                     <div class="image-container">
                         <img id="proof-image-display" class="preview-image">
+                    </div>
+                </div>
+
+                <!-- ส่วนข้อมูลร้าน ตอนนี้อยู่ด้านล่างหลักฐาน -->
+                <div class="shop-info">
+                    <div class="info-row">
+                        <span id="discount-code-display" class="discount-code"></span>
+                    </div>
+                    <div class="info-row">
+                        <label>ชื่อร้าน:</label>
+                        <span id="shop-name-display"></span>
+                    </div>
+                    <div class="info-row">
+                        <label>ภารกิจ:</label>
+                        <span id="mission-display" class="mission-content"></span>
+                    </div>
+                    <div class="info-row">
+                        <label>ส่วนลด:</label>
+                        <span id="discount-display"></span>
                     </div>
                 </div>
                 
@@ -174,10 +197,14 @@
             </div>
         </div>
     </div>
-    
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Custom Script -->
     <script src="scripts.js"></script>  
     
+    <!-- Script to activate Lucide Icons -->
+    <script>
+      lucide.createIcons();
+    </script>
 </body>
 </html>
