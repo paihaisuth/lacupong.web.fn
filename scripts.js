@@ -13,15 +13,17 @@ let selectedPosition = null;
 let selectedMarker = null;
 let selectedTreasure = null;
 let userLocation = null;
-const defaultCenter = [13.7563, 100.5018]; // Default to Bangkok
+// Adjusted: Temporarily set defaultCenter to the problematic coupon's location for debugging
+const defaultCenter = [19.02759179537163, 99.926775097847]; 
+
 
 // ========================================================
 // NEW: Icon Scaling Configuration (ปรับค่าให้เหมาะสม)
 // ========================================================
 // These define the *base size* of the L.divIcon container.
 // The content inside will be scaled.
-const BASE_TREASURE_ICON_SIZE = 24; // ADJUSTED: ขนาดกล่องคอนเทนเนอร์สำหรับไอคอนคูปอง (ไม่มีตัวนับแล้วสามารถเล็กลงได้)
-const BASE_USER_ICON_SIZE = 24;     // ADJUSTED: ขนาดกล่องสำหรับตำแหน่งผู้ใช้
+const BASE_TREASURE_ICON_SIZE = 24; // ขนาดกล่องคอนเทนเนอร์สำหรับไอคอนคูปอง
+const BASE_USER_ICON_SIZE = 24;     // ขนาดกล่องสำหรับตำแหน่งผู้ใช้
 const BASE_ZOOM = 14;               // Zoom level where icon content scale is 1.0 (no scaling)
 const ZOOM_SCALE_FACTOR_PER_LEVEL = 0.15; // How much scale changes per zoom level difference
 const MIN_SCALE = 0.25;             // Minimum allowed icon content scale
@@ -103,13 +105,12 @@ function updateUserLocationOnMap(location) {
         icon: L.divIcon({ 
             className: 'user-location-divicon', // Specific class for the outer divIcon
             html: '<div class="current-location-icon-content">📍</div>', // Inner content div
-            iconSize: [BASE_USER_ICON_SIZE, BASE_USER_ICON_SIZE], // Adjusted: Make pin's container square
+            iconSize: [BASE_USER_ICON_SIZE, BASE_USER_ICON_SIZE], // Make pin's container square
             iconAnchor: [BASE_USER_ICON_SIZE / 2, BASE_USER_ICON_SIZE] // Anchor at the bottom center of the container
         }),
         interactive: false
     }).addTo(map);
     map.setView([location.lat, location.lng], 18);
-    // Explicitly update scaling, in case zoom level didn't change enough to trigger 'zoomend'
     updateMarkerIconContentScaling(); 
 }
 
@@ -132,10 +133,8 @@ function updateMarkerIconContentScaling() {
 
     const finalScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale)); 
 
-    // Set a CSS variable for counter-scaling (e.g., treasure count) - not used for count anymore, but kept for consistency
     document.documentElement.style.setProperty('--current-icon-scale', finalScale);
 
-    // Apply the scaling transformation to the *inner content* elements
     document.querySelectorAll('.treasure-icon-content, .current-location-icon-content').forEach(contentElement => {
         contentElement.style.transform = `scale(${finalScale})`;
     });
@@ -149,57 +148,120 @@ function updateMarkerIconContentScaling() {
 async function loadTreasures() {
     try {
         clearTreasureMarkers();
+        console.log("Fetching treasures from:", `${BASE_URL}/api/treasures`);
         const response = await fetch(`${BASE_URL}/api/treasures`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
         let treasures = await response.json();
-        treasures = treasures.filter(t => t.remainingBoxes > 0);
-        const locationGroups = groupTreasuresByLocation(treasures);
+        console.log("All treasures received from API (before frontend deduplication):", JSON.parse(JSON.stringify(treasures)));
+        
+        // NEW: Frontend Deduplication Step - Ensure each unique lat/lng has only one representation
+        // (This addresses the scenario where backend sends multiple identical coupons for the same spot)
+        const uniqueTreasuresMap = new Map();
+        treasures.forEach(treasure => {
+            // Ensure coordinates are valid before processing
+            if (treasure.lat !== undefined && treasure.lng !== undefined && 
+                typeof treasure.lat === 'number' && typeof treasure.lng === 'number' && 
+                !isNaN(treasure.lat) && !isNaN(treasure.lng)) {
+                
+                const locationKey = `${treasure.lat},${treasure.lng}`;
+                
+                // If there's no treasure stored for this location key yet, add this one.
+                // This means if multiple identical treasures come from backend for same lat/lng,
+                // only the first one encountered will be used.
+                if (!uniqueTreasuresMap.has(locationKey)) {
+                    uniqueTreasuresMap.set(locationKey, treasure);
+                }
+                // If a treasure already exists for this location key, we keep the first one encountered.
+                // We could also add logic here to aggregate `remainingBoxes` or `totalBoxes` if needed,
+                // but for now, we just pick the first unique one.
+
+            } else {
+                console.warn("Skipping treasure from API response due to invalid or missing coordinates:", JSON.parse(JSON.stringify(treasure)));
+            }
+        });
+        // Convert the Map back to an array of unique treasures
+        let deduplicatedTreasures = Array.from(uniqueTreasuresMap.values());
+        console.log("Treasures after frontend deduplication:", JSON.parse(JSON.stringify(deduplicatedTreasures)));
+
+
+        // Filter treasures that still have remaining boxes greater than 0
+        const filteredTreasures = deduplicatedTreasures.filter(t => t.remainingBoxes > 0); 
+        console.log("Treasures after filtering for remainingBoxes > 0:", JSON.parse(JSON.stringify(filteredTreasures)));
+
+        // groupTreasuresByLocation will now receive already deduplicated data,
+        // so each locationKey should ideally have an Array(1) if there's only one coupon type per spot,
+        // or Array(N) if there are N *different* coupons at the same precise lat/lng.
+        const locationGroups = groupTreasuresByLocation(filteredTreasures); 
+        console.log("Treasures grouped by location (after deduplication and filtering):", JSON.parse(JSON.stringify(locationGroups)));
+
         createTreasureMarkers(locationGroups);
-        // NEW: Ensure icons are scaled after they are created
         updateMarkerIconContentScaling();
     } catch (error) {
         console.error("Error loading treasures:", error);
-        alert("เกิดข้อผิดพลาดในการโหลดข้อมูลคูปอง");
+        alert("เกิดข้อผิดพลาดในการโหลดข้อมูลคูปอง: " + error.message);
     }
 }
 
 function clearTreasureMarkers() {
     treasureMarkers.forEach(marker => map.removeLayer(marker));
     treasureMarkers = [];
+    console.log("Cleared existing treasure markers.");
 }
 
 function groupTreasuresByLocation(treasures) {
     const locationGroups = {};
     treasures.forEach(treasure => {
         const locationKey = `${treasure.lat},${treasure.lng}`;
-        locationGroups[locationKey] = locationGroups[locationKey] || [];
-        locationGroups[locationKey].push(treasure);
+        // Coordinate validation is done during deduplication, but a final check is good practice
+        if (treasure.lat !== undefined && treasure.lng !== undefined && 
+            typeof treasure.lat === 'number' && typeof treasure.lng === 'number' && 
+            !isNaN(treasure.lat) && !isNaN(treasure.lng)) { 
+            locationGroups[locationKey] = locationGroups[locationKey] || [];
+            locationGroups[locationKey].push(treasure);
+        } else {
+            // This log should ideally not be hit if deduplication handled it correctly
+            console.warn("Skipping treasure in groupTreasuresByLocation due to invalid or missing coordinates:", JSON.parse(JSON.stringify(treasure))); 
+        }
     });
     return locationGroups;
 }
 
 function createTreasureMarkers(locationGroups) {
+    let markersCreatedCount = 0;
     Object.values(locationGroups).forEach(treasureGroup => {
-        const remainingBoxes = treasureGroup.reduce((sum, t) => sum + (t.remainingBoxes || 0), 0);
-        if (remainingBoxes <= 0) return;
         const { lat, lng } = treasureGroup[0];
-        const marker = L.marker([lat, lng], { icon: createTreasureIcon() }).addTo(map); // No count passed now
+        
+        // Final coordinate validation before marker creation
+        if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+            console.warn("Skipping marker creation for group due to invalid coordinates (final check):", JSON.parse(JSON.stringify(treasureGroup[0])));
+            return; 
+        }
+
+        console.log("Attempting to create marker for location:", { lat, lng }, "with", treasureGroup.length, "unique treasures. First treasure in group:", JSON.parse(JSON.stringify(treasureGroup[0])));
+        const marker = L.marker([lat, lng], { icon: createTreasureIcon() }).addTo(map); 
         marker.on('click', () => {
             if (currentRole === 'hunter') {
                 selectedMarker = marker;
-                selectedTreasure = treasureGroup.find(t => t.remainingBoxes > 0) || treasureGroup[0]; 
+                // If there are multiple *different* coupons at the same unique location (after deduplication),
+                // we'll still pick the first one from the group to display details.
+                selectedTreasure = treasureGroup[0]; 
                 displayTreasureInfo(selectedTreasure);
                 showModal('view-treasure-modal');
             }
         });
         treasureMarkers.push(marker);
+        markersCreatedCount++;
     });
+    console.log(`Total ${markersCreatedCount} markers created on map from ${Object.keys(locationGroups).length} location groups.`);
 }
 
-function createTreasureIcon() { // No 'count' parameter needed
+function createTreasureIcon() { 
     return L.divIcon({
-        className: 'treasure-divicon', // Specific class for the outer divIcon
-        html: `<div class="treasure-icon-content">💰</div>`, // Removed count span
+        className: 'treasure-divicon', 
+        html: `<div class="treasure-icon-content">💰</div>`, 
         iconSize: [BASE_TREASURE_ICON_SIZE, BASE_TREASURE_ICON_SIZE], 
         iconAnchor: [BASE_TREASURE_ICON_SIZE / 2, BASE_TREASURE_ICON_SIZE / 2] // Anchor at the center of the container
     });
