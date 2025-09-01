@@ -16,6 +16,19 @@ let userLocation = null;
 const defaultCenter = [13.7563, 100.5018]; // Default to Bangkok
 
 // ========================================================
+// NEW: Icon Scaling Configuration (ปรับค่าให้เหมาะสม)
+// ========================================================
+// These define the *base size* of the L.divIcon container.
+// The content inside will be scaled.
+const BASE_TREASURE_ICON_SIZE = 24; // ADJUSTED: ขนาดกล่องคอนเทนเนอร์สำหรับไอคอนคูปอง (ไม่มีตัวนับแล้วสามารถเล็กลงได้)
+const BASE_USER_ICON_SIZE = 24;     // ADJUSTED: ขนาดกล่องสำหรับตำแหน่งผู้ใช้
+const BASE_ZOOM = 14;               // Zoom level where icon content scale is 1.0 (no scaling)
+const ZOOM_SCALE_FACTOR_PER_LEVEL = 0.15; // How much scale changes per zoom level difference
+const MIN_SCALE = 0.25;             // Minimum allowed icon content scale
+const MAX_SCALE = 2.5;              // Maximum allowed icon content scale
+
+
+// ========================================================
 //                    INITIALIZATION
 // ========================================================
 
@@ -36,8 +49,6 @@ function initMap() {
 // ========================================================
 
 function initializeMap() {
-    // CHANGED: Initialize the map WITHOUT setting the view yet.
-    // The view will be set after geolocation is attempted.
     map = L.map('map', { zoomControl: false, attributionControl: false });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -45,26 +56,30 @@ function initializeMap() {
     }).addTo(map);
 
     L.control.zoom({ position: 'topleft' }).addTo(map);
+
+    // NEW: Add zoomend event listener after map is initialized
+    map.on('zoomend', updateMarkerIconContentScaling);
 }
 
 function setupGeolocation() {
     if (!navigator.geolocation) {
         alert("เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง");
-        handleGeolocationError(); // Go to error handling to set default view
+        handleGeolocationError(); 
         return;
     }
-    // Set a timeout to prevent waiting forever
     navigator.geolocation.getCurrentPosition(handleGeolocationSuccess, handleGeolocationError, { 
         enableHighAccuracy: true,
-        timeout: 8000 // 8 seconds timeout
+        timeout: 8000 
     });
 }
 
 function handleGeolocationSuccess(position) {
     userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-    updateUserLocationOnMap(userLocation); // This function sets the view to the user's location
+    updateUserLocationOnMap(userLocation); 
     hideLoadingMessage();
-    loadTreasures();
+    loadTreasures().then(() => { 
+        updateMarkerIconContentScaling(); // Call to set initial scale for all marker content
+    });
 }
 
 function handleGeolocationError(error) {
@@ -73,22 +88,29 @@ function handleGeolocationError(error) {
         alert("ไม่สามารถระบุตำแหน่งของคุณได้ จะแสดงแผนที่เริ่มต้นที่กรุงเทพฯ");
     }
     
-    // CHANGED: This is now the fallback for setting the initial view
-    map.setView(defaultCenter, 16); // Set the default zoomed-in view HERE.
+    map.setView(defaultCenter, 16); 
 
     hideLoadingMessage();
-    loadTreasures();
+    loadTreasures().then(() => { 
+        updateMarkerIconContentScaling(); // Call to set initial scale for all marker content
+    });
 }
 
 
 function updateUserLocationOnMap(location) {
     if (window.userMarker) map.removeLayer(window.userMarker);
     window.userMarker = L.marker([location.lat, location.lng], {
-        icon: L.divIcon({ className: 'current-location-icon', html: '📍', iconSize: [24, 24], iconAnchor: [12, 24] }),
+        icon: L.divIcon({ 
+            className: 'user-location-divicon', // Specific class for the outer divIcon
+            html: '<div class="current-location-icon-content">📍</div>', // Inner content div
+            iconSize: [BASE_USER_ICON_SIZE, BASE_USER_ICON_SIZE], // Adjusted: Make pin's container square
+            iconAnchor: [BASE_USER_ICON_SIZE / 2, BASE_USER_ICON_SIZE] // Anchor at the bottom center of the container
+        }),
         interactive: false
     }).addTo(map);
-    // This is the primary function to set the view when location is found
     map.setView([location.lat, location.lng], 18);
+    // Explicitly update scaling, in case zoom level didn't change enough to trigger 'zoomend'
+    updateMarkerIconContentScaling(); 
 }
 
 function setupMapClickHandler() {
@@ -99,6 +121,26 @@ function setupMapClickHandler() {
         }
     });
 }
+
+// ========================================================
+// NEW: ICON CONTENT SCALING FUNCTION
+// ========================================================
+function updateMarkerIconContentScaling() {
+    const currentZoom = map.getZoom();
+    const zoomDifference = currentZoom - BASE_ZOOM;
+    let scale = 1.0 + (zoomDifference * ZOOM_SCALE_FACTOR_PER_LEVEL);
+
+    const finalScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale)); 
+
+    // Set a CSS variable for counter-scaling (e.g., treasure count) - not used for count anymore, but kept for consistency
+    document.documentElement.style.setProperty('--current-icon-scale', finalScale);
+
+    // Apply the scaling transformation to the *inner content* elements
+    document.querySelectorAll('.treasure-icon-content, .current-location-icon-content').forEach(contentElement => {
+        contentElement.style.transform = `scale(${finalScale})`;
+    });
+}
+
 
 // ========================================================
 //                  TREASURE/COUPON FUNCTIONS
@@ -113,6 +155,8 @@ async function loadTreasures() {
         treasures = treasures.filter(t => t.remainingBoxes > 0);
         const locationGroups = groupTreasuresByLocation(treasures);
         createTreasureMarkers(locationGroups);
+        // NEW: Ensure icons are scaled after they are created
+        updateMarkerIconContentScaling();
     } catch (error) {
         console.error("Error loading treasures:", error);
         alert("เกิดข้อผิดพลาดในการโหลดข้อมูลคูปอง");
@@ -139,11 +183,11 @@ function createTreasureMarkers(locationGroups) {
         const remainingBoxes = treasureGroup.reduce((sum, t) => sum + (t.remainingBoxes || 0), 0);
         if (remainingBoxes <= 0) return;
         const { lat, lng } = treasureGroup[0];
-        const marker = L.marker([lat, lng], { icon: createTreasureIcon(remainingBoxes) }).addTo(map);
+        const marker = L.marker([lat, lng], { icon: createTreasureIcon() }).addTo(map); // No count passed now
         marker.on('click', () => {
             if (currentRole === 'hunter') {
                 selectedMarker = marker;
-                selectedTreasure = treasureGroup.find(t => !t.claimed) || treasureGroup[0];
+                selectedTreasure = treasureGroup.find(t => t.remainingBoxes > 0) || treasureGroup[0]; 
                 displayTreasureInfo(selectedTreasure);
                 showModal('view-treasure-modal');
             }
@@ -152,11 +196,12 @@ function createTreasureMarkers(locationGroups) {
     });
 }
 
-function createTreasureIcon(count) {
+function createTreasureIcon() { // No 'count' parameter needed
     return L.divIcon({
-        className: 'treasure-icon',
-        html: `💰<span class="treasure-count">${count}</span>`,
-        iconSize: [24, 24], iconAnchor: [12, 12]
+        className: 'treasure-divicon', // Specific class for the outer divIcon
+        html: `<div class="treasure-icon-content">💰</div>`, // Removed count span
+        iconSize: [BASE_TREASURE_ICON_SIZE, BASE_TREASURE_ICON_SIZE], 
+        iconAnchor: [BASE_TREASURE_ICON_SIZE / 2, BASE_TREASURE_ICON_SIZE / 2] // Anchor at the center of the container
     });
 }
 
@@ -273,6 +318,10 @@ async function saveTreasure() {
     const discountBaht = document.getElementById('discount-baht').value;
     if (!discount && !discountBaht) return alert('กรุณากรอกส่วนลดอย่างน้อยหนึ่งช่อง');
     const totalBoxes = parseInt(document.getElementById('total-boxes').value) || 1;
+    
+    const saveButton = document.getElementById('save-treasure');
+    saveButton.disabled = true; // Disable button immediately
+
     const treasureData = {
         lat: selectedPosition.lat, lng: selectedPosition.lng,
         placementDate: new Date().toISOString().split('T')[0],
@@ -282,8 +331,7 @@ async function saveTreasure() {
         discount: discount || null, discountBaht: discountBaht || null,
         totalBoxes: totalBoxes, remainingBoxes: totalBoxes,
     };
-    const saveButton = document.getElementById('save-treasure');
-    saveButton.disabled = true;
+    
     try {
         const response = await fetch(`${BASE_URL}/api/treasures`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(treasureData)
@@ -296,15 +344,17 @@ async function saveTreasure() {
         console.error("Error saving treasure:", error);
         alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
     } finally {
-        saveButton.disabled = false;
+        saveButton.disabled = false; // Re-enable button
     }
 }
 
 async function submitProof() {
     if (!selectedTreasure) return alert('ไม่พบคูปองที่เลือก');
     if (!document.getElementById('proof-image').files.length) return alert('กรุณาอัปโหลดรูปภาพหลักฐาน');
+    
     const submitButton = document.getElementById('submit-proof');
-    submitButton.disabled = true;
+    submitButton.disabled = true; // Disable button immediately
+
     try {
         await updateTreasureStatus();
         displayDiscountCode();
@@ -314,7 +364,7 @@ async function submitProof() {
         console.error("Error submitting proof:", error);
         alert("เกิดข้อผิดพลาดในการส่งหลักฐาน");
     } finally {
-        submitButton.disabled = false;
+        submitButton.disabled = false; // Re-enable button
     }
 }
 
@@ -329,7 +379,7 @@ async function updateTreasureStatus() {
 function displayDiscountCode() {
     document.getElementById('discount-code-display').textContent = generateDiscountCode();
     document.getElementById('shop-name-display').textContent = selectedTreasure.name || 'ไม่ระบุ';
-    document.getElementById('mission-display').textContent = selectedTreasure.mission || 'ไม่ระบุ';
+    document.getElementById('mission-display').textContent = selectedTreasure.mission || 'ไม่ระระบุ';
     document.getElementById('discount-display').textContent = selectedTreasure.discount ? `${selectedTreasure.discount}%` : `${selectedTreasure.discountBaht} บาท`;
     const file = document.getElementById('proof-image').files[0];
     if (file) {

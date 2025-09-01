@@ -11,6 +11,7 @@
     --border-color: #e0e0e0;
     --white: #FFFFFF;
     --grey-light-bg: #f2f2f2;
+    --current-icon-scale: 1; /* CSS variable for icon scaling, used for counter-scaling */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -103,34 +104,50 @@ body {
 }
 
 /* =================================================================== */
-/*                     MAP ICON STYLES (Smaller Version)               */
+/*                     MAP ICON STYLES (Scaled Version)                */
 /* =================================================================== */
-.treasure-icon {
-    /* CHANGED: ลดขนาดฟอนต์ของอิโมจิ */
-    font-size: 20px; 
-    position: relative;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+
+/* The outer Leaflet divIcon containers. These get their size from JS (iconSize) */
+.leaflet-marker-icon.treasure-divicon,
+.leaflet-marker-icon.user-location-divicon {
+    background-color: transparent; /* Ensure the Leaflet container is transparent */
+    border: none;
 }
-.treasure-count {
-    position: absolute;
-    /* CHANGED: ปรับตำแหน่งให้ชิดขึ้น */
-    top: -4px; 
-    right: -6px;
-    background-color: #D32F2F;
-    color: white;
-    /* CHANGED: ลดขนาดฟอนต์ของตัวเลข */
-    font-size: 11px;
+
+/* Inner content div which holds the emoji, and is scaled */
+.treasure-icon-content,
+.current-location-icon-content {
+    transition: transform 0.1s ease-out; /* Smooth scaling transition */
+    display: flex; /* Use flexbox for robust centering */
+    align-items: center;
+    justify-content: center;
+    position: absolute; /* Allows manual positioning within the parent L.divIcon */
+    top: 0; left: 0; right: 0; bottom: 0; /* Fill the parent L.divIcon space */
+    line-height: 1; /* For better emoji vertical alignment */
+}
+
+/* Specific styling for the treasure icon content (the emoji) */
+.treasure-icon-content {
+    font-size: 12px; /* ADJUSTED: Base emoji size to be small */
     font-weight: bold;
-    border-radius: 50%;
-    /* CHANGED: ลด Padding ให้วงกลมเล็กลง */
-    padding: 1px 4px; 
-    border: 1px solid white;
+    text-shadow: 0 0 3px rgba(0,0,0,0.5);
+    color: #fff; /* Default color for the emoji itself, if it's not a color emoji */
+    transform-origin: 50% 50%; /* Scale from the center for the treasure icon */
 }
-.current-location-icon {
-    /* CHANGED: ลดขนาดฟอนต์ให้พอดีกับขนาดไอคอนใหม่ */
-    font-size: 24px;
+
+/* Removed .treasure-icon-content span:first-child specific margin, as there's no count to make room for */
+
+/* REMOVED: .treasure-icon-content .treasure-count styles are removed */
+
+
+/* Specific styling for the current location icon content (the pin emoji) */
+.current-location-icon-content {
+    font-size: 12px; /* ADJUSTED: Matching treasure icon emoji size */
     text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    transform-origin: 50% 100%; /* Scale from the bottom center for a pin */
 }
+
+
 /* =================================================================== */
 /*                      MODAL SYSTEM (MOBILE-FIRST)                    */
 /* =================================================================== */
@@ -277,10 +294,6 @@ textarea {
 /*                    DESKTOP/TABLET MEDIA QUERIES                     */
 /* =================================================================== */
 @media (min-width: 768px) {
-    /*
-     * REMOVED: The .bottom-app-bar styles that made it a floating pill.
-     * Now it will remain full-width on all screen sizes.
-    */
     .modal { align-items: center; }
     .modal-content {
         width: 90%; max-width: 500px;
@@ -295,5 +308,3 @@ textarea {
     .action-buttons { flex-direction: row; justify-content: flex-end; }
     .btn, .btn2 { width: auto; }
 }
-
-
