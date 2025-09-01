@@ -468,7 +468,7 @@ function displayDiscountCode() {
 
 // ========================================================
 //                      HELPER FUNCTIONS
-// ========================================================
+// ========================================================//
 
 function hideLoadingMessage() { 
     const msg = document.getElementById('loading-message');
