@@ -13,6 +13,7 @@ let selectedPosition = null;
 let selectedMarker = null;
 let selectedTreasure = null;
 let userLocation = null;
+let pageLoadTime = null;
 // Adjusted: Temporarily set defaultCenter to the problematic coupon's location for debugging
 const defaultCenter = [19.02759179537163, 99.926775097847]; 
 
@@ -35,8 +36,10 @@ const MAX_SCALE = 2.5;              // Maximum allowed icon content scale
 // ========================================================
 
 document.addEventListener('DOMContentLoaded', function() {
+    logAppOpen();
     initMap();
     setupEventListeners();
+    setupTimeTracking();
     switchRole(currentRole, true); 
 });
 
@@ -73,6 +76,28 @@ function setupGeolocation() {
         enableHighAccuracy: true,
         timeout: 8000 
     });
+}
+
+// [เพิ่มใหม่] ฟังก์ชันสำหรับยิง API ไปนับจำนวนครั้งที่เปิดเว็บ
+async function logAppOpen() {
+    try {
+        // ยิง API สองตัวพร้อมกันเมื่อเปิดแอป
+        await Promise.all([
+            // 1. ยิง API เพื่อนับจำนวนครั้งที่เปิดเว็บ (เหมือนเดิม)
+            fetch(`${BASE_URL}/api/visitors/opened-app`, { method: 'POST' }),
+
+            // 2. ยิง API เพื่อส่งข้อมูลแหล่งที่มา (Referrer)
+            fetch(`${BASE_URL}/api/stats/track-referrer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ referrer: document.referrer })
+            })
+        ]);
+
+    } catch (error) {
+        // ไม่ต้องแสดง alert แต่ log ไว้ใน console ก็พอ
+        console.error('Could not log app open or referrer:', error);
+    }
 }
 
 function handleGeolocationSuccess(position) {
@@ -148,14 +173,14 @@ function updateMarkerIconContentScaling() {
 async function loadTreasures() {
     try {
         clearTreasureMarkers();
-        console.log("Fetching treasures from:", `${BASE_URL}/api/treasures`);
+        //("Fetching treasures from:", `${BASE_URL}/api/treasures`);
         const response = await fetch(`${BASE_URL}/api/treasures`);
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
         let treasures = await response.json();
-        console.log("All treasures received from API (before frontend deduplication):", JSON.parse(JSON.stringify(treasures)));
+        //("All treasures received from API (before frontend deduplication):", JSON.parse(JSON.stringify(treasures)));
         
         // NEW: Frontend Deduplication Step - Ensure each unique lat/lng has only one representation
         // (This addresses the scenario where backend sends multiple identical coupons for the same spot)
@@ -184,18 +209,18 @@ async function loadTreasures() {
         });
         // Convert the Map back to an array of unique treasures
         let deduplicatedTreasures = Array.from(uniqueTreasuresMap.values());
-        console.log("Treasures after frontend deduplication:", JSON.parse(JSON.stringify(deduplicatedTreasures)));
+        //("Treasures after frontend deduplication:", JSON.parse(JSON.stringify(deduplicatedTreasures)));
 
 
         // Filter treasures that still have remaining boxes greater than 0
         const filteredTreasures = deduplicatedTreasures.filter(t => t.remainingBoxes > 0); 
-        console.log("Treasures after filtering for remainingBoxes > 0:", JSON.parse(JSON.stringify(filteredTreasures)));
+        //("Treasures after filtering for remainingBoxes > 0:", JSON.parse(JSON.stringify(filteredTreasures)));
 
         // groupTreasuresByLocation will now receive already deduplicated data,
         // so each locationKey should ideally have an Array(1) if there's only one coupon type per spot,
         // or Array(N) if there are N *different* coupons at the same precise lat/lng.
         const locationGroups = groupTreasuresByLocation(filteredTreasures); 
-        console.log("Treasures grouped by location (after deduplication and filtering):", JSON.parse(JSON.stringify(locationGroups)));
+        //("Treasures grouped by location (after deduplication and filtering):", JSON.parse(JSON.stringify(locationGroups)));
 
         createTreasureMarkers(locationGroups);
         updateMarkerIconContentScaling();
@@ -208,7 +233,7 @@ async function loadTreasures() {
 function clearTreasureMarkers() {
     treasureMarkers.forEach(marker => map.removeLayer(marker));
     treasureMarkers = [];
-    console.log("Cleared existing treasure markers.");
+    //("Cleared existing treasure markers.");
 }
 
 function groupTreasuresByLocation(treasures) {
@@ -239,8 +264,6 @@ function createTreasureMarkers(locationGroups) {
             console.warn("Skipping marker creation for group due to invalid coordinates (final check):", JSON.parse(JSON.stringify(treasureGroup[0])));
             return; 
         }
-
-        console.log("Attempting to create marker for location:", { lat, lng }, "with", treasureGroup.length, "unique treasures. First treasure in group:", JSON.parse(JSON.stringify(treasureGroup[0])));
         const marker = L.marker([lat, lng], { icon: createTreasureIcon() }).addTo(map); 
         marker.on('click', () => {
             if (currentRole === 'hunter') {
@@ -255,7 +278,7 @@ function createTreasureMarkers(locationGroups) {
         treasureMarkers.push(marker);
         markersCreatedCount++;
     });
-    console.log(`Total ${markersCreatedCount} markers created on map from ${Object.keys(locationGroups).length} location groups.`);
+    //(`Total ${markersCreatedCount} markers created on map from ${Object.keys(locationGroups).length} location groups.`);
 }
 
 function createTreasureIcon() { 
@@ -298,6 +321,32 @@ function setupEventListeners() {
     setupModalEventListeners();
     setupFormEventListeners();
     setupDiscountInputs();
+}
+
+// [เพิ่มใหม่] ฟังก์ชันสำหรับจัดการการส่งข้อมูลเวลา
+function setupTimeTracking() {
+    pageLoadTime = new Date(); // เริ่มจับเวลาทันทีที่หน้าเว็บพร้อมใช้งาน
+
+    window.addEventListener('beforeunload', () => {
+        if (!pageLoadTime) return;
+
+        // คำนวณระยะเวลาเป็นวินาที
+        const timeSpentMs = new Date() - pageLoadTime;
+        const timeSpentSeconds = Math.round(timeSpentMs / 1000);
+
+        // ไม่ต้องส่งถ้าอยู่น้อยกว่า 3 วินาที (ป้องกันการรีเฟรชรัวๆ)
+        if (timeSpentSeconds < 3) return;
+
+        const url = `${BASE_URL}/api/visitors/log-time`;
+        const data = { durationSeconds: timeSpentSeconds };
+        
+        // navigator.sendBeacon คือวิธีที่ดีที่สุดในการส่งข้อมูลก่อนปิดหน้าเว็บ
+        // มันจะทำงานใน background และไม่หน่วงการปิดหน้าต่าง
+        if (navigator.sendBeacon) {
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            navigator.sendBeacon(url, blob);
+        }
+    });
 }
 
 function switchRole(role, isInitial = false) {
