@@ -1,0 +1,13 @@
+/*
+ * MAIN STYLESHEET
+ * This file imports all other CSS modules.
+ * The order is important for the cascade.
+ */
+
+@import url('base.css');         /* Variables and global styles */
+@import url('layout.css');       /* Main page structure (app bar, containers) */
+@import url('map-elements.css'); /* Leaflet icons and map-specific items */
+@import url('modals.css');       /* Generic modal styles */
+@import url('forms.css');        /* Buttons, inputs, and all form elements */
+@import url('auth.css');         /* User menu and auth-specific styles */
+@import url('responsive.css');   /* Media queries for larger screens (loads last) */

@@ -1,0 +1,341 @@
+/* Styles for all form elements, buttons, and inputs */
+/* Loading Spinner Animation for Buttons */
+.form-group-checkbox {
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.form-group-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    accent-color: var(--primary-color); /* Modern way to color checkboxes */
+    cursor: pointer;
+}
+
+.form-group-checkbox label {
+    margin-bottom: 0;
+    font-weight: 400;
+    color: var(--text-light-color);
+}
+
+.form-group-checkbox a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.form-group-checkbox a:hover {
+    text-decoration: underline;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.icon-spin svg {
+  animation: spin 1s linear infinite;
+}
+
+/* Style for button in loading state */
+.btn.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#discount-code-modal .proof-section { 
+    margin-bottom: 20px; 
+}
+#discount-code-modal .shop-info { 
+    margin-bottom: 20px; 
+}
+
+#discount-code-modal .image-container {
+    width: 100%;
+    margin-top: 10px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 10px;
+    min-height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* IMPORTANT: Targets the image inside this specific modal */
+#discount-code-modal img.preview-image {
+    display: none; /* JS will set this to 'block' when ready */
+    max-width: 100%;
+    max-height: 250px; /* Limit height as per old style */
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+#discount-code-modal .info-row { 
+    margin-bottom: 15px; 
+}
+#discount-code-modal .info-row label { 
+    font-weight: 500; 
+    color: var(--text-light-color); 
+}
+#discount-code-modal .info-row span { 
+    display: block; 
+    font-size: 1.1rem; 
+    margin-top: 4px; 
+}
+
+#discount-code-modal .discount-code {
+    display: block;
+    width: 100%;
+    background-color: #F1EAE8;
+    color: var(--primary-dark-color);
+    font-size: 2rem !important;
+    font-weight: 700;
+    text-align: center;
+    padding: 15px;
+    border-radius: 12px;
+    letter-spacing: 2px;
+}
+
+.image-upload-box { 
+    /* ... existing styles ... */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background-color: var(--grey-light-bg);
+    font-size: 16px;
+    font-family: 'Kanit', sans-serif;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.action-buttons,
+.action-buttons2,
+.step-navigation {
+    margin-top: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn,
+.btn2 {
+    font-family: 'Kanit', sans-serif;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    width: 100%;
+    text-align: center;
+    transition: background-color 0.3s, color 0.3s, opacity 0.3s;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark-color);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--text-light-color);
+    border-color: var(--border-color);
+}
+
+.btn-success {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn2 {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+/* Image Uploader */
+.image-upload-box {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.image-upload-box input[type="file"] {
+    display: none;
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text-light-color);
+}
+.upload-placeholder svg {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+}
+
+.image-upload-box .preview-image {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Multi-step Form Progress Bar */
+.progress-bar {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 25px;
+    counter-reset: step;
+}
+
+.progress-step {
+    position: relative;
+    text-align: center;
+    width: 50%;
+    color: var(--text-light-color);
+}
+
+.progress-step::before {
+    counter-increment: step;
+    content: counter(step);
+    display: block;
+    margin: 0 auto 10px auto;
+    width: 30px;
+    height: 30px;
+    line-height: 28px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    font-weight: bold;
+}
+
+.progress-step.active {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.progress-step.active::before {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.form-step {
+    display: none;
+}
+
+.form-step.active-step {
+    display: block;
+}
+
+.step-navigation {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+/* Custom Radio Buttons */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.radio-option {
+    display: block;
+    position: relative;
+}
+
+.radio-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.radio-option label {
+    display: block;
+    position: relative;
+    padding: 10px 10px 10px 40px;
+    cursor: pointer;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.radio-option input:checked~label {
+    background-color: #F1EAE8;
+    border-color: var(--primary-color);
+    font-weight: 500;
+}
+
+.radio-option label::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 20px;
+    width: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+}
+
+.radio-option input:checked~label::before {
+    border-color: var(--primary-color);
+}
+
+.radio-option label::after {
+    content: '';
+    display: none;
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary-color);
+}
+
+.radio-option input:checked~label::after {
+    display: block;
+}

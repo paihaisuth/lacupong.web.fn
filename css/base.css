@@ -1,0 +1,30 @@
+/* Base variables and foundational styles */
+:root {
+    --primary-color: #8D6E63;
+    --primary-dark-color: #6D4C41;
+    --background-color: #F7F5F4;
+    --surface-color: #FFFFFF;
+    --text-color: #424242;
+    --text-light-color: #757575;
+    --border-color: #e0e0e0;
+    --white: #FFFFFF;
+    --grey-light-bg: #f2f2f2;
+}
+
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+}
+
+html, body { 
+    height: 100%; 
+}
+
+body {
+    font-family: 'Kanit', sans-serif;
+    color: var(--text-color);
+    font-size: 16px;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
+}

@@ -1,0 +1,19 @@
+/* Media queries for larger screens */
+@media (min-width: 768px) {
+    .modal { 
+        align-items: center; 
+    }
+    .modal-content {
+        width: 90%; 
+        max-width: 500px;
+        border-radius: 20px;
+        transform: translateY(0);
+    }
+    .action-buttons { 
+        flex-direction: row; 
+        justify-content: flex-end; 
+    }
+    .btn, .btn2 { 
+        width: auto; 
+    }
+}

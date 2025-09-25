@@ -1,24 +1,31 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เเผนที่เเสดงคูปอง</title>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="styles.css"/>
 
-    <!-- html2canvas for Screenshot -->
+    <!-- Third-Party Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    
-    <!-- Lucide Icons Framework -->
     <script src="https://unpkg.com/lucide@0.390.0"></script>
 
+
+
+    <!-- Main Application Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css" />
 </head>
+
 <body>
-        
-    <!-- Main container for map -->
+
+    <!-- ======================================================= -->
+    <!--                       APP LAYOUT                        -->
+    <!-- ======================================================= -->
     <div class="container">
         <div class="map-container">
             <div id="map"></div>
@@ -27,184 +34,288 @@
     </div>
 
     <!-- ======================================================= -->
-    <!--              BOTTOM APP BAR (Mobile First)              -->
+    <!--                    BOTTOM APP BAR                       -->
     <!-- ======================================================= -->
     <div class="bottom-app-bar">
-        <!-- 1. Refresh Button -->
-        <button id="refresh-btn" class="bar-icon-btn" title="โหลดข้อมูลใหม่">
-            <i data-lucide="rotate-cw"></i>
-        </button>
-
-        <!-- 2. Role Selector (The sliding pill design) -->
+        <button id="refresh-btn" class="bar-icon-btn" title="โหลดข้อมูลใหม่"><i data-lucide="rotate-cw"></i></button>
         <div class="role-switch-container">
             <div class="role-switch">
                 <div id="switch-slider"></div>
-                <!-- Default active button is hunter, but JS will manage it -->
                 <button id="placer-btn" class="role-option" data-role="placer">วางคูปอง</button>
                 <button id="hunter-btn" class="role-option" data-role="hunter">หาคูปอง</button>
             </div>
         </div>
-
-        <!-- 3. Current Location Button -->
-        <button id="location-btn" class="bar-icon-btn" title="ตำแหน่งของฉัน">
-            <i data-lucide="locate-fixed"></i>
-        </button>
+        <button id="location-btn" class="bar-icon-btn" title="ตำแหน่งของฉัน"><i data-lucide="locate-fixed"></i></button>
+        <button id="user-btn" class="bar-icon-btn" title="โปรไฟล์"><i data-lucide="user-circle-2"></i></button>
     </div>
-    
+
     <!-- ======================================================= -->
-    <!--                       MODALS                            -->
+    <!--             USER MENU (for logged-in users)             -->
     <!-- ======================================================= -->
-    
-    <!-- ฟอรมวางคูปอง -->
+    <div id="user-menu" class="user-menu">
+        <div id="user-info-display"></div>
+        <button id="logout-btn" class="btn-logout">ออกจากระบบ</button>
+    </div>
+
+
+    <!-- ======================================================= -->
+    <!-- =================== MODALS: TREASURE FLOW =================== -->
+    <!-- ======================================================= -->
+
+    <!-- MODAL 1: Place Treasure Form -->
     <div class="modal" id="place-treasure-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">วางคูปอง</h3>
-                <button class="close-btn">&times;</button>
+                <h3 class="modal-title">วางคูปอง</h3><button class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label for="name">ชื่อร้าน:</label>
-                    <input type="text" id="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="ig">ไอจี:</label>
-                    <input type="text" id="ig" >
-                </div>
-                <div class="form-group">
-                    <label for="face">เฟส:</label>
-                    <input type="text" id="face" >
-                </div>
-                <div class="form-group">
-                    <label for="mission">ภารกิจที่ต้องทำเพื่อรับคูปอง:</label>
-                    <textarea id="mission" rows="3" required></textarea>
-                </div>
-                <p style="color: #666; margin-bottom: 1rem; font-size: 0.9rem;">กรุณาเลือกกรอกส่วนลดเพียง 1 ช่อง</p>
+                <div class="form-group"><label for="name">ชื่อร้าน:</label><input type="text" id="name" required></div>
+                <div class="form-group"><label for="ig">ไอจี:</label><input type="text" id="ig"></div>
+                <div class="form-group"><label for="face">เฟส:</label><input type="text" id="face"></div>
+                <div class="form-group"><label for="mission">ภารกิจ:</label><textarea id="mission" rows="3"
+                        required></textarea></div>
                 <div style="display: flex; gap: 1rem;">
-                    <div class="form-group" style="flex: 1;">
-                        <label for="discount">ส่วนลด (%):</label>
-                        <input type="number" id="discount" >
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label for="discount-baht">ส่วนลด (บาท):</label>
-                        <input type="number" id="discount-baht"  >
-                    </div>
+                    <div class="form-group" style="flex: 1;"><label for="discount">ส่วนลด (%):</label><input
+                            type="number" id="discount"></div>
+                    <div class="form-group" style="flex: 1;"><label for="discount-baht">ส่วนลด (บาท):</label><input
+                            type="number" id="discount-baht"></div>
                 </div>
-                <div class="form-group">
-                    <label for="total-boxes">จำนวนคูปอง:</label>
-                    <input type="number" id="total-boxes" min="1" value="1" required>
-                </div>
-                <div class="action-buttons">
-                    <button class="btn btn-secondary">ยกเลิก</button>
-                    <button class="btn btn-primary" id="save-treasure">บันทึก</button>
-                </div>
+                <div class="form-group"><label for="total-boxes">จำนวนคูปอง:</label><input type="number"
+                        id="total-boxes" min="1" value="1" required></div>
+                <div class="action-buttons"><button class="btn btn-secondary">ยกเลิก</button><button
+                        class="btn btn-primary" id="save-treasure">บันทึก</button></div>
             </div>
         </div>
     </div>
-    
-    <!-- เเสดงรายละเอียดข้อมูลที่พบ -->
+
+    <!-- MODAL 2: View Treasure Details -->
     <div class="modal" id="view-treasure-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">พบคูปอง!</h3>
-                <button class="close-btn">&times;</button>
+                <h3 class="modal-title">พบคูปอง!</h3><button class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="treasure-info" id="treasure-info"></div>
-                <div class="action-buttons">
-                    <button class="btn btn-secondary">ยกเลิก</button>
-                    <button class="btn btn-primary" id="next-step">ทำภารกิจ</button>
-                </div>
+                <div class="action-buttons"><button class="btn btn-secondary">ยกเลิก</button><button
+                        class="btn btn-primary" id="next-step">ทำภารกิจ</button></div>
             </div>
         </div>
     </div>
-    
-    <!-- Modal สำหรับการส่งหลักฐาน (ฉบับปรับปรุง) -->
+
+    <!-- MODAL 3: Submit Mission Proof -->
     <div class="modal" id="submit-proof-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">ส่งหลักฐานภารกิจ</h3>
-                <button class="close-btn">&times;</button>
+                <h3 class="modal-title">ส่งหลักฐานภารกิจ</h3><button class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
                     <label>อัปโหลดภาพหลักฐาน:</label>
-                    
-                    <!-- NEW: Uploader Box Structure -->
                     <div id="image-upload-box" class="image-upload-box">
-                        <!-- The actual file input is hidden -->
                         <input type="file" id="proof-image" accept="image/*" required>
-                        
-                        <!-- The placeholder with the '+' icon -->
-                        <div id="upload-placeholder" class="upload-placeholder">
-                            <i data-lucide="plus"></i>
-                            <span>เพิ่มรูปภาพ</span>
-                        </div>
-
-                        <!-- The preview image will appear here -->
+                        <div id="upload-placeholder" class="upload-placeholder"><i
+                                data-lucide="plus"></i><span>เพิ่มรูปภาพ</span></div>
                         <img id="proof-preview" class="preview-image">
                     </div>
-
                 </div>
-                <div class="action-buttons">
-                    <button class="btn btn-secondary">กลับ</button>
-                    <button class="btn btn-success" id="submit-proof">ส่งหลักฐาน</button>
-                </div>
+                <div class="action-buttons"><button class="btn btn-secondary">กลับ</button><button
+                        class="btn btn-success" id="submit-proof">ส่งหลักฐาน</button></div>
             </div>
         </div>
     </div>
-    
-    <!-- Modal สำหรับแสดงหลักฐาน -->
-    <!-- Modal สำหรับแสดงหลักฐาน (ฉบับแก้ไข) -->
-    <div class="modal" id="discount-code-modal">
+
+    <!-- MODAL 4: Display Discount Code -->
+    <div class="modal modal-static" id="discount-code-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">เเคปภาพหน้านี้ส่งให้ทางร้าน</h3>
-                <button class="close-btn">&times;</button>
+                <h3 class="modal-title">เเคปภาพหน้านี้ส่งให้ทางร้าน</h3><button class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
-
-                <!-- MOVED: ส่วนหลักฐานภารกิจ ถูกย้ายขึ้นมาบนสุด -->
-                <div class="proof-section">
-                    <label>หลักฐานภารกิจ</label>
-                    <div class="image-container">
-                        <img id="proof-image-display" class="preview-image">
-                    </div>
+                <div class="proof-section"><label>หลักฐานภารกิจ</label>
+                    <div class="image-container"><img id="proof-image-display" class="preview-image"></div>
                 </div>
-
-                <!-- ส่วนข้อมูลร้าน ตอนนี้อยู่ด้านล่างหลักฐาน -->
                 <div class="shop-info">
-                    <div class="info-row">
-                        <span id="discount-code-display" class="discount-code"></span>
-                    </div>
-                    <div class="info-row">
-                        <label>ชื่อร้าน:</label>
-                        <span id="shop-name-display"></span>
-                    </div>
-                    <div class="info-row">
-                        <label>ภารกิจ:</label>
-                        <span id="mission-display" class="mission-content"></span>
-                    </div>
-                    <div class="info-row">
-                        <label>ส่วนลด:</label>
-                        <span id="discount-display"></span>
-                    </div>
+                    <div class="info-row"><span id="discount-code-display" class="discount-code"></span></div>
+                    <div class="info-row"><label>ชื่อร้าน:</label><span id="shop-name-display"></span></div>
+                    <div class="info-row"><label>ภารกิจ:</label><span id="mission-display"
+                            class="mission-content"></span></div>
+                    <div class="info-row"><label>ส่วนลด:</label><span id="discount-display"></span></div>
                 </div>
-                
-                <div class="action-buttons2">
-                    <button class="btn2 btn-primary" id="close-code">ปิด</button>
+                <div class="action-buttons2"><button class="btn2 btn-primary close-btn">ปิด</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- ================= MODALS: AUTHENTICATION ================== -->
+    <!-- ======================================================= -->
+
+    <!-- AUTH MODAL 1: Login -->
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">เข้าสู่ระบบ</h3><button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="login-form">
+                    <div class="form-group"><label for="login-username">ชื่อผู้ใช้:</label><input type="text"
+                            id="login-username" required></div>
+                    <div class="form-group"><label for="login-password">รหัสผ่าน:</label><input type="password"
+                            id="login-password" required></div>
+                    <div class="action-buttons"><button type="submit" class="btn btn-primary"
+                            id="login-submit-btn">เข้าสู่ระบบ</button></div>
+                </form>
+                <p class="form-forgot-password"><a href="#" id="go-to-forgot">ลืมรหัสผ่าน?</a></p>
+                <p class="form-switch-text">ยังไม่มีบัญชี? <a href="#" id="go-to-register">สมัครสมาชิก</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTH MODAL 2: Multi-Step Register -->
+    <div class="modal" id="register-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">สมัครสมาชิก</h3><button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="progress-bar">
+                    <div class="progress-step active" data-step="1">ข้อมูลบัญชี</div>
+                    <div class="progress-step" data-step="2">เกี่ยวกับคุณ</div>
+                </div>
+                <form id="register-form">
+                    <!-- Step 1: Account Info -->
+                    <div class="form-step active-step" data-step="1">
+                        <div class="form-group">
+                            <label for="register-username">ชื่อผู้ใช้ (สำหรับ Login):</label>
+                            <input type="text" id="register-username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-email">อีเมล (สำหรับกู้รหัสผ่าน):</label>
+                            <!-- UPDATE: Change input type to "email" for browser validation -->
+                            <input type="email" id="register-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password">รหัสผ่าน:</label>
+                            <input type="password" id="register-password" required>
+                        </div>
+                        <!-- ADD: Policy Checkbox Section -->
+                        <div class="form-group-checkbox">
+                            <input type="checkbox" id="policy-checkbox" required>
+                            <label for="policy-checkbox">
+                                ฉันได้อ่านและยอมรับ
+                                <a href="#" id="open-policy-link">นโยบายความเป็นส่วนตัว</a>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Step 2: Demographics -->
+                    <div class="form-step" data-step="2">
+                        <div class="form-group"><label>เพศ:</label>
+                            <div class="radio-group">
+                                <div class="radio-option"><input type="radio" id="gender-male" name="gender"
+                                        value="male"><label for="gender-male">ชาย</label></div>
+                                <div class="radio-option"><input type="radio" id="gender-female" name="gender"
+                                        value="female"><label for="gender-female">หญิง</label></div>
+                                <div class="radio-option"><input type="radio" id="gender-lgbt" name="gender"
+                                        value="lgbtq+"><label for="gender-lgbt">LGBTQ+</label></div>
+                                <div class="radio-option"><input type="radio" id="gender-none" name="gender"
+                                        value="not-specified"><label for="gender-none">ไม่ระบุ</label></div>
+                            </div>
+                        </div>
+                        <div class="form-group"><label>ช่วงอายุ:</label>
+                            <div class="radio-group">
+                                <div class="radio-option"><input type="radio" id="age-1" name="age-range"
+                                        value="<18"><label for="age-1">น้อยกว่า 18 ปี</label></div>
+                                <div class="radio-option"><input type="radio" id="age-2" name="age-range"
+                                        value="18-25"><label for="age-2">18 - 25 ปี</label></div>
+                                <div class="radio-option"><input type="radio" id="age-3" name="age-range"
+                                        value="26-35"><label for="age-3">26 - 35 ปี</label></div>
+                                <div class="radio-option"><input type="radio" id="age-4" name="age-range"
+                                        value=">35"><label for="age-4">มากกว่า 35 ปี</label></div>
+                            </div>
+                        </div>
+                        <div class="form-group"><label>รู้จักเราจากช่องทางไหน:</label>
+                            <div class="radio-group">
+                                <div class="radio-option"><input type="radio" id="ref-fb" name="referral"
+                                        value="facebook"><label for="ref-fb">Facebook</label></div>
+                                <div class="radio-option"><input type="radio" id="ref-ig" name="referral"
+                                        value="instagram"><label for="ref-ig">Instagram (IG)</label></div>
+                                <div class="radio-option"><input type="radio" id="ref-tt" name="referral"
+                                        value="tiktok"><label for="ref-tt">TikTok</label></div>
+                                <div class="radio-option"><input type="radio" id="ref-fr" name="referral"
+                                        value="friend"><label for="ref-fr">เพื่อนชวน</label></div>
+                                <div class="radio-option"><input type="radio" id="ref-ot" name="referral"
+                                        value="other"><label for="ref-ot">อื่น ๆ</label></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step-navigation"><button type="button" class="btn btn-secondary" id="register-back-btn"
+                            style="display: none;">กลับ</button><button type="button" class="btn btn-primary"
+                            id="register-next-btn">ถัดไป</button></div>
+                </form>
+                <p class="form-switch-text">มีบัญชีอยู่แล้ว? <a href="#" id="go-to-login">เข้าสู่ระบบ</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTH MODAL 3: Forgot Password -->
+    <div class="modal" id="forgot-password-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">ลืมรหัสผ่าน</h3><button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="forgot-password-form">
+                    <p class="form-info-text">กรุณากรอกอีเมลที่ใช้สมัครสมาชิก ระบบจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปให้</p>
+                    <div class="form-group"><label for="forgot-email">อีเมล:</label><input type="email"
+                            id="forgot-email" required></div>
+                    <div class="action-buttons"><button type="submit" class="btn btn-primary"
+                            id="send-reset-link-btn">ส่งลิงก์รีเซ็ต</button></div>
+                </form>
+                <p class="form-switch-text"><a href="#" id="back-to-login">กลับไปหน้าเข้าสู่ระบบ</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- =================== MODALS: GENERAL ======================= -->
+    <!-- ======================================================= -->
+
+    <!-- GENERAL MODAL 1: Data Policy -->
+    <div class="modal" id="policy-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">นโยบายข้อมูล</h3><button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>นโยบายการจัดการข้อมูลสำหรับผู้ใช้ที่ลงทะเบียนแล้วกำลังจะมาในเร็วๆ นี้</p>
+                <p style="margin-top: 1rem;">(Data policy for registered users is coming soon.)</p>
+                <div class="action-buttons"><button class="btn btn-primary close-btn">เข้าใจแล้ว</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GENERAL MODAL 2: Session Expired -->
+    <div class="modal modal-static" id="session-expired-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">เซสชั่นหมดอายุ</h3>
+                <!-- No close button to force user action -->
+            </div>
+            <div class="modal-body">
+                <p>การเชื่อมต่อของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบอีกครั้งเพื่อใช้งานต่อ</p>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="relogin-btn">เข้าสู่ระบบ</button>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Custom Script -->
-    <script src="scripts.js"></script>  
-    
-    <!-- Script to activate Lucide Icons -->
-    <script>
-      lucide.createIcons();
-    </script>
+
+    <!-- ======================================================= -->
+    <!--                      SCRIPT LOADING                     -->
+    <!-- ======================================================= -->
+    <script type="module" src="js/main.js"></script>
+    <script>lucide.createIcons();</script>
+
 </body>
+
 </html>
