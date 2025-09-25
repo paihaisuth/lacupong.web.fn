@@ -111,5 +111,26 @@ document.addEventListener('DOMContentLoaded', () => {
         showModal('login-modal');
     }
 
+    const discountPercentInput = document.getElementById('discount');
+    const discountBahtInput = document.getElementById('discount-baht');
+
+    if (discountPercentInput && discountBahtInput) {
+        // Event listener for Percentage discount
+        discountPercentInput.addEventListener('input', () => {
+            // If there's a value in the percentage input, clear the baht input.
+            if (discountPercentInput.value) {
+                discountBahtInput.value = '';
+            }
+        });
+
+        // Event listener for Baht discount
+        discountBahtInput.addEventListener('input', () => {
+            // If there's a value in the baht input, clear the percentage input.
+            if (discountBahtInput.value) {
+                discountPercentInput.value = '';
+            }
+        });
+    }
+
     //console.log("Application Initialized");
 });

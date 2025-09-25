@@ -170,7 +170,7 @@ function setupMapClickHandler() {
 
 async function saveTreasure() {
     if (!auth.isLoggedIn() && !guest.canGuestPerformAction('place')) {
-        return alert("คุณสามารถวางคูปองได้วันละ 1 ครั้งเท่านั้น (สำหรับผู้ใช้ทั่วไป)");
+        return alert("คุณสามารถวางคูปองได้วันละ 1 ครั้งเท่านั้น \nเข้าสู่ระบบ\nเพื่อทำรายการต่อ");
     }
 
     const treasureData = {
@@ -211,7 +211,7 @@ async function saveTreasure() {
 
 async function submitProof() {
     if (!auth.isLoggedIn() && !guest.canGuestPerformAction('open')) {
-        return alert("คุณสามารถเปิดคูปองได้วันละ 1 ครั้งเท่านั้น (สำหรับผู้ใช้ทั่วไป)");
+        return alert("คุณสามารถเปิดคูปองได้วันละ 1 ครั้งเท่านั้น \nเข้าสู่ระบบ\nเพื่อทำรายการต่อ");
     }
     if (!selectedTreasure || !document.getElementById('proof-image').files.length) {
         return alert('กรุณาเลือกคูปองและอัปโหลดหลักฐาน');
