@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Styles ที่เราเคยเขียนไว้ */
+@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+
+body { font-family: 'Kanit', sans-serif; }
+
+/* Map Effects */
+.leaflet-layer { filter: sepia(0.2) contrast(0.95) saturate(0.8); }
+
+/* Premium Marker Icon */
+.treasure-divicon { background: transparent; border: none; }
+.treasure-icon-content {
+    background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* User Location Pulse */
+.user-location-divicon .current-location-icon-content {
+    background-color: #3b82f6;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+    width: 100%; height: 100%;
+    animation: pulse-blue 2s infinite;
+}
+@keyframes pulse-blue {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
+    70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+/* SweetAlert Override */
+div:where(.swal2-container) div:where(.swal2-popup) {
+    border-radius: 20px !important;
+    font-family: 'Kanit', sans-serif !important;
+}
+
+/* LEAFLET CONTROL ADJUSTMENT */
+/* Move zoom controls down slightly so they don't hit the top of the browser on mobile */
+.leaflet-top {
+    top: 20px; 
+}
+.leaflet-left {
+    left: 20px;
+}

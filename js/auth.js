@@ -1,3 +1,4 @@
+// js/auth.js
 import * as api from './api.js';
 import * as ui from './uiManager.js';
 
@@ -6,7 +7,7 @@ const POLICY_LINK_URL = "#";
 let state = {
     authToken: null,
     currentUser: null,
-    registrationData: {} // To store data between registration steps
+    registrationData: {} 
 };
 
 export const isLoggedIn = () => !!state.authToken;
@@ -14,24 +15,22 @@ export const isLoggedIn = () => !!state.authToken;
 function updateUIforAuthState() {
     const userBtn = document.getElementById('user-btn');
     const userInfoDisplay = document.getElementById('user-info-display');
+    const loginDot = document.getElementById('login-dot'); // เพิ่มจุดเขียวใน UI
 
     if (state.authToken && state.currentUser) {
-        // Logged In State
-        userBtn.classList.add('logged-in');
-        userBtn.innerHTML = '<i data-lucide="user-check-2"></i>';
-        userInfoDisplay.textContent = `สวัสดี, ${state.currentUser.username}`;
+        userBtn.classList.add('text-gold-600', 'bg-gold-50'); // Tailwind Styling
+        userInfoDisplay.innerHTML = `<span class="text-sm text-gray-500">สวัสดี</span><br><span class="text-lg text-gold-600 font-bold">${state.currentUser.username}</span>`;
+        if(loginDot) loginDot.style.display = 'block';
     } else {
-        // Logged Out State
-        userBtn.classList.remove('logged-in');
-        userBtn.innerHTML = '<i data-lucide="user-circle-2"></i>';
+        userBtn.classList.remove('text-gold-600', 'bg-gold-50');
         userInfoDisplay.textContent = '';
+        if(loginDot) loginDot.style.display = 'none';
     }
-    // This is crucial: tell Lucide to find and replace the new <i> tags
     lucide.createIcons();
 }
 
 async function handleLogin(e, credentials = null) {
-    if (e) e.preventDefault(); // Prevent form submission if called by event
+    if (e) e.preventDefault();
     
     const loginBtn = document.getElementById('login-submit-btn');
     const originalBtnContent = loginBtn.innerHTML;
@@ -45,12 +44,9 @@ async function handleLogin(e, credentials = null) {
         password = document.getElementById('login-password').value;
     }
 
-    // --- Start Loading State ---
-    if (!credentials) { // Only show loading on manual login
+    if (!credentials) { 
         loginBtn.disabled = true;
-        loginBtn.classList.add('loading');
-        loginBtn.innerHTML = '<span class="icon-spin"><i data-lucide="loader"></i></span>';
-        lucide.createIcons();
+        loginBtn.innerHTML = '<div class="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mx-auto"></div>';
     }
 
     try {
@@ -61,17 +57,22 @@ async function handleLogin(e, credentials = null) {
             localStorage.setItem('authToken', state.authToken);
             localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
             updateUIforAuthState();
-            ui.hideAllModals(); // Close all modals (login or register)
-            ui.showModal('policy-modal'); // Show welcome/policy modal
+            
+            ui.hideAllModals(); 
+            
+            // Welcome Alert
+            if (!credentials) {
+                ui.showSuccessAlert('ยินดีต้อนรับ!', `สวัสดีคุณ ${state.currentUser.username}`);
+            }
         }
     } catch (error) {
         console.error("Login failed:", error.message);
-        if (!credentials) alert(`เข้าสู่ระบบไม่สำเร็จ: ${error.message}`);
-        // If auto-login fails, the user can try manually.
+        if (!credentials) {
+            ui.showErrorAlert(error.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+        }
     } finally {
         if (!credentials) {
             loginBtn.disabled = false;
-            loginBtn.classList.remove('loading');
             loginBtn.innerHTML = originalBtnContent;
         }
     }
@@ -79,40 +80,54 @@ async function handleLogin(e, credentials = null) {
 
 async function handleRegister(e) {
     e.preventDefault();
-    // This is the final step, collect data from Step 2
     const gender = document.querySelector('input[name="gender"]:checked')?.value;
     const ageRange = document.querySelector('input[name="age-range"]:checked')?.value;
     const referral = document.querySelector('input[name="referral"]:checked')?.value;
 
     state.registrationData = { ...state.registrationData, gender, ageRange, referral };
-    
+
     try {
         const response = await api.registerUser(state.registrationData);
-
         if(response.success) {
-            alert('สมัครสมาชิกสำเร็จ! กำลังเข้าสู่ระบบอัตโนมัติ...');
-            // --- AUTO LOGIN ---
+            // Success & Auto Login
+            await ui.showSuccessAlert('สมัครสมาชิกสำเร็จ!', 'กำลังเข้าสู่ระบบอัตโนมัติ...');
+            
             await handleLogin(null, { 
                 username: state.registrationData.username, 
-                password: state.registrationData.password // We stored this in state from step 1
+                password: state.registrationData.password 
             });
         }
     } catch (error) {
-        alert('เกิดข้อผิดพลาดในการสมัครสมาชิก: ' + error.message);
+        ui.showErrorAlert(error.message);
     } finally {
         resetRegistrationForm();
     }
 }
 
 function handleLogout() {
-    state.authToken = null;
-    state.currentUser = null;
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('currentUser');
-    
-    updateUIforAuthState();
-    document.getElementById('user-menu').classList.remove('show');
-    alert('ออกจากระบบสำเร็จ');
+    Swal.fire({
+        title: 'ยืนยันการออกจากระบบ?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'ออกจากระบบ',
+        cancelButtonText: 'ยกเลิก',
+        customClass: {
+            popup: 'rounded-3xl shadow-2xl font-sans',
+            confirmButton: 'px-6 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors mx-2',
+            cancelButton: 'px-6 py-2 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 transition-colors mx-2'
+        },
+        buttonsStyling: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            state.authToken = null;
+            state.currentUser = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            updateUIforAuthState();
+            document.getElementById('user-menu').classList.remove('opacity-100', 'visible', 'translate-y-0'); // Hide Menu
+            ui.showSuccessAlert('ออกจากระบบแล้ว', 'ไว้เจอกันใหม่นะ!');
+        }
+    });
 }
 
 export function checkInitialAuthState() {
@@ -125,33 +140,29 @@ export function checkInitialAuthState() {
     }
 }
 
-// Multi-step Registration Logic
 function handleRegistrationStep() {
     const currentStep = parseInt(document.querySelector('.form-step.active-step').dataset.step);
 
     if (currentStep === 1) {
-        // --- CHECK POLICY ---
         const policyCheckbox = document.getElementById('policy-checkbox');
         if (!policyCheckbox.checked) {
-            alert('กรุณายอมรับนโยบายความเป็นส่วนตัวก่อนดำเนินการต่อ');
+            ui.showInfoAlert('แจ้งเตือน', 'กรุณายอมรับนโยบายความเป็นส่วนตัวก่อนดำเนินการต่อ');
             return;
         }
 
         const username = document.getElementById('register-username').value;
-        const emailInput = document.getElementById('register-email'); // Get the element
+        const emailInput = document.getElementById('register-email');
         const email = emailInput.value;
         const password = document.getElementById('register-password').value;
 
-        // --- [FRONTEND UPDATE] EMAIL VALIDATION ---
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // A simple email regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            alert('กรุณากรอกรูปแบบอีเมลให้ถูกต้อง (เช่น example@mail.com)');
-            emailInput.focus(); // Focus on the email field
-            return; // Stop execution
+            ui.showInfoAlert('รูปแบบไม่ถูกต้อง', 'กรุณากรอกอีเมลให้ถูกต้อง (เช่น example@mail.com)');
+            return;
         }
 
         if(!username || !password) {
-            alert('กรุณากรอกข้อมูลบัญชีให้ครบถ้วน');
+            ui.showInfoAlert('ข้อมูลไม่ครบ', 'กรุณากรอกข้อมูลบัญชีให้ครบถ้วน');
             return;
         }
         
@@ -163,17 +174,49 @@ function handleRegistrationStep() {
 }
 
 function navigateToStep(stepNumber) {
-    document.querySelectorAll('.form-step').forEach(step => step.classList.remove('active-step'));
-    document.querySelector(`.form-step[data-step="${stepNumber}"]`).classList.add('active-step');
+    // 1. ซ่อนทุก Step ก่อน
+    document.querySelectorAll('.form-step').forEach(step => {
+        step.classList.remove('active-step');
+        step.classList.add('hidden'); // สำคัญ: ต้องเพิ่ม class hidden ของ Tailwind
+    });
 
+    // 2. แสดง Step ที่ต้องการ
+    const targetStep = document.querySelector(`.form-step[data-step="${stepNumber}"]`);
+    if (targetStep) {
+        targetStep.classList.add('active-step');
+        targetStep.classList.remove('hidden'); // สำคัญ: ต้องลบ class hidden ออก
+    }
+
+    // 3. อัปเดต Progress Bar ด้านบน
     document.querySelectorAll('.progress-step').forEach(step => step.classList.remove('active'));
-    document.querySelector(`.progress-step[data-step="${stepNumber}"]`).classList.add('active');
+    const targetProgress = document.querySelector(`.progress-step[data-step="${stepNumber}"]`);
+    if (targetProgress) {
+        targetProgress.classList.add('active');
+        // เปลี่ยนสีตัวเลขและเส้น (Tailwind Logic)
+        if(stepNumber === 1) {
+            // Reset styles for step 1 active
+        }
+    }
 
+    // 4. จัดการปุ่มกด (Back / Next)
     const backBtn = document.getElementById('register-back-btn');
     const nextBtn = document.getElementById('register-next-btn');
 
-    backBtn.style.display = (stepNumber === 1) ? 'none' : 'inline-block';
-    nextBtn.textContent = (stepNumber === 2) ? 'สมัครสมาชิก' : 'ถัดไป';
+    if (stepNumber === 1) {
+        backBtn.style.display = 'none';
+        nextBtn.textContent = 'ถัดไป';
+        // เปลี่ยนสี Progress Bar กลับ
+        document.querySelector('.progress-step[data-step="2"] div').classList.replace('bg-gold-600', 'bg-gray-100');
+        document.querySelector('.progress-step[data-step="2"] div').classList.replace('text-white', 'text-gray-400');
+        document.querySelector('.progress-step[data-step="2"] div').classList.remove('shadow-lg');
+    } else {
+        backBtn.style.display = 'inline-block';
+        nextBtn.textContent = 'สมัครสมาชิก';
+        // เปลี่ยนสี Progress Bar ให้ Step 2 ดู Active
+        document.querySelector('.progress-step[data-step="2"] div').classList.replace('bg-gray-100', 'bg-gold-600');
+        document.querySelector('.progress-step[data-step="2"] div').classList.replace('text-gray-400', 'text-white');
+        document.querySelector('.progress-step[data-step="2"] div').classList.add('shadow-lg', 'shadow-gold-400/30');
+    }
 }
 
 function resetRegistrationForm() {
@@ -193,40 +236,47 @@ export function setupAuthEventListeners() {
         e.preventDefault();
         const email = document.getElementById('forgot-email').value;
         const sendBtn = document.getElementById('send-reset-link-btn');
+        const originalText = sendBtn.textContent;
+        
         sendBtn.disabled = true;
         sendBtn.textContent = 'กำลังส่ง...';
         
         try {
             const response = await api.requestPasswordReset(email);
-            alert(response.message); // Show success message from server
+            ui.showSuccessAlert('ส่งลิงก์แล้ว', response.message);
             ui.hideModal('forgot-password-modal');
-            document.getElementById('forgot-email').value = ''; // Clear input
+            document.getElementById('forgot-email').value = ''; 
         } catch (error) {
-            alert('เกิดข้อผิดพลาด: ' + error.message);
+            ui.showErrorAlert(error.message);
         } finally {
             sendBtn.disabled = false;
-            sendBtn.textContent = 'ส่งลิงก์รีเซ็ต';
+            sendBtn.textContent = originalText;
         }
     });
 
-    // Multi-step form navigation
     document.getElementById('register-next-btn').addEventListener('click', handleRegistrationStep);
     document.getElementById('register-back-btn').addEventListener('click', () => navigateToStep(1));
 
-    // --- ADD: Policy Link Listener ---
     document.getElementById('open-policy-link').addEventListener('click', (e) => {
         e.preventDefault();
         if (POLICY_LINK_URL === "#") {
-            // If no real link yet, show the "coming soon" modal
             ui.showModal('policy-modal');
         } else {
             window.open(POLICY_LINK_URL, '_blank');
         }
     });
 
-    userBtn.addEventListener('click', () => {
+    userBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent immediate close
         if (isLoggedIn()) {
-            userMenu.classList.toggle('show');
+            // Toggle Logic for Tailwind Classes
+            if(userMenu.classList.contains('opacity-0')) {
+                 userMenu.classList.remove('opacity-0', 'invisible', 'translate-y-4');
+                 userMenu.classList.add('opacity-100', 'visible', 'translate-y-0');
+            } else {
+                 userMenu.classList.add('opacity-0', 'invisible', 'translate-y-4');
+                 userMenu.classList.remove('opacity-100', 'visible', 'translate-y-0');
+            }
         } else {
             ui.showModal('login-modal');
         }
@@ -234,34 +284,14 @@ export function setupAuthEventListeners() {
 
     document.addEventListener('click', (e) => {
         if (!userBtn.contains(e.target) && !userMenu.contains(e.target)) {
-            userMenu.classList.remove('show');
+            userMenu.classList.add('opacity-0', 'invisible', 'translate-y-4');
+            userMenu.classList.remove('opacity-100', 'visible', 'translate-y-0');
         }
     });
-    
-    document.getElementById('go-to-register').addEventListener('click', (e) => {
-        e.preventDefault();
-        ui.hideModal('login-modal');
-        ui.showModal('register-modal');
-    });
 
-    document.getElementById('go-to-forgot').addEventListener('click', (e) => {
-        e.preventDefault();
-        ui.hideModal('login-modal');
-        ui.showModal('forgot-password-modal');
-    });
-
-    document.getElementById('back-to-login').addEventListener('click', (e) => {
-        e.preventDefault();
-        ui.hideModal('forgot-password-modal');
-        ui.showModal('login-modal');
-    });
-
-    document.getElementById('go-to-login').addEventListener('click', (e) => {
-        e.preventDefault();
-        resetRegistrationForm();
-        ui.hideModal('register-modal');
-        ui.showModal('login-modal');
-    });
-
-    
+    // ... Modal switching logic remains the same ...
+    document.getElementById('go-to-register').addEventListener('click', (e) => { e.preventDefault(); ui.hideModal('login-modal'); ui.showModal('register-modal'); });
+    document.getElementById('go-to-forgot').addEventListener('click', (e) => { e.preventDefault(); ui.hideModal('login-modal'); ui.showModal('forgot-password-modal'); });
+    document.getElementById('back-to-login').addEventListener('click', (e) => { e.preventDefault(); ui.hideModal('forgot-password-modal'); ui.showModal('login-modal'); });
+    document.getElementById('go-to-login').addEventListener('click', (e) => { e.preventDefault(); resetRegistrationForm(); ui.hideModal('register-modal'); ui.showModal('login-modal'); });
 }

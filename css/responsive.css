@@ -1,4 +1,4 @@
-/* Media queries for larger screens */
+/* responsive.css Media queries for larger screens */
 @media (min-width: 768px) {
     .modal { 
         align-items: center; 

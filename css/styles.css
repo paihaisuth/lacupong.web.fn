@@ -1,13 +1,76 @@
-/*
- * MAIN STYLESHEET
- * This file imports all other CSS modules.
- * The order is important for the cascade.
- */
+/* css/styles.css - Clean Up */
+@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
 
-@import url('base.css');         /* Variables and global styles */
-@import url('layout.css');       /* Main page structure (app bar, containers) */
-@import url('map-elements.css'); /* Leaflet icons and map-specific items */
-@import url('modals.css');       /* Generic modal styles */
-@import url('forms.css');        /* Buttons, inputs, and all form elements */
-@import url('auth.css');         /* User menu and auth-specific styles */
-@import url('responsive.css');   /* Media queries for larger screens (loads last) */
+/* Custom Map Marker Styling (สำคัญมาก: ทำให้ Marker ดูแพง) */
+.treasure-divicon {
+    background: transparent;
+    border: none;
+}
+
+.treasure-icon-content {
+    background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3), 0 0 15px rgba(255, 215, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px; /* Icon size */
+    width: 100%;
+    height: 100%;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy effect */
+}
+
+/* User Location Pulse Effect */
+.user-location-divicon .current-location-icon-content {
+    background-color: #3b82f6; /* Tailwind Blue-500 */
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+    width: 100%;
+    height: 100%;
+    animation: pulse-blue 2s infinite;
+}
+
+@keyframes pulse-blue {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
+    70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+/* Modal States */
+.modal {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Animation เมื่อ Modal Show: Slide Up */
+.modal.show .modal-content {
+    transform: translateY(0);
+}
+/* Animation เมื่อ Modal Show: Scale (สำหรับ Modal กลางจอ) */
+.modal.show #discount-code-modal .modal-content {
+    transform: scale(1);
+}
+
+/* Role Switcher Active State Logic */
+.role-option.active {
+    color: white !important;
+}
+
+/* Custom SweetAlert2 Override ให้เข้ากับธีม */
+div:where(.swal2-container) div:where(.swal2-popup) {
+    border-radius: 20px !important;
+    padding: 2em !important;
+    font-family: 'Kanit', sans-serif !important;
+}
+.swal2-confirm {
+    background: linear-gradient(135deg, #D4AF37, #C5A028) !important;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4) !important;
+}

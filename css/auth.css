@@ -1,4 +1,4 @@
-/* Styles specific to Authentication UI */
+/*auth.css Styles specific to Authentication UI */
 #user-btn.logged-in i {
     color: var(--primary-color);
     stroke-width: 2.5;

@@ -3,311 +3,653 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เเผนที่เเสดงคูปอง</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Golden Ticket - แผนที่ล่าสมบัติ</title>
 
-    <!-- Third-Party Libraries -->
+    <!-- 1. Tailwind CSS -->
+    <link href="css/output.css" rel="stylesheet">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet & Icons -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://unpkg.com/lucide@0.390.0"></script>
 
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
+    <!-- 2. SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <!-- Main Application Stylesheet -->
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+    <!-- Cropper.js JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="css/styles.css" />
+
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #fdfdfd;
+            overflow: hidden;
+        }
+
+        .leaflet-layer {
+            filter: sepia(0.2) contrast(0.95) saturate(0.8);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
 </head>
 
-<body>
+<body class="text-gray-800 antialiased h-screen w-screen relative bg-gray-50">
 
     <!-- ======================================================= -->
-    <!--                       APP LAYOUT                        -->
+    <!--                       MAP LAYOUT                        -->
     <!-- ======================================================= -->
-    <div class="container">
-        <div class="map-container">
-            <div id="map"></div>
-            <div class="loading-message" id="loading-message">กำลังโหลดแผนที่และตำแหน่งของคุณ...</div>
-        </div>
-    </div>
+    <div class="absolute inset-0 z-0">
+        <div id="map" class="w-full h-full outline-none"></div>
 
-    <!-- ======================================================= -->
-    <!--                    BOTTOM APP BAR                       -->
-    <!-- ======================================================= -->
-    <div class="bottom-app-bar">
-        <button id="refresh-btn" class="bar-icon-btn" title="โหลดข้อมูลใหม่"><i data-lucide="rotate-cw"></i></button>
-        <div class="role-switch-container">
-            <div class="role-switch">
-                <div id="switch-slider"></div>
-                <button id="placer-btn" class="role-option" data-role="placer">วางคูปอง</button>
-                <button id="hunter-btn" class="role-option" data-role="hunter">หาคูปอง</button>
-            </div>
-        </div>
-        <button id="location-btn" class="bar-icon-btn" title="ตำแหน่งของฉัน"><i data-lucide="locate-fixed"></i></button>
-        <button id="user-btn" class="bar-icon-btn" title="โปรไฟล์"><i data-lucide="user-circle-2"></i></button>
-    </div>
-
-    <!-- ======================================================= -->
-    <!--             USER MENU (for logged-in users)             -->
-    <!-- ======================================================= -->
-    <div id="user-menu" class="user-menu">
-        <div id="user-info-display"></div>
-        <button id="logout-btn" class="btn-logout">ออกจากระบบ</button>
-    </div>
-
-
-    <!-- ======================================================= -->
-    <!-- =================== MODALS: TREASURE FLOW =================== -->
-    <!-- ======================================================= -->
-
-    <!-- MODAL 1: Place Treasure Form -->
-    <div class="modal" id="place-treasure-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">วางคูปอง</h3><button class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group"><label for="name">ชื่อร้าน:</label><input type="text" id="name" required></div>
-                <div class="form-group"><label for="ig">ไอจี:</label><input type="text" id="ig"></div>
-                <div class="form-group"><label for="face">เฟส:</label><input type="text" id="face"></div>
-                <div class="form-group"><label for="mission">ภารกิจ:</label><textarea id="mission" rows="3"
-                        required></textarea></div>
-                <div style="display: flex; gap: 1rem;">
-                    <div class="form-group" style="flex: 1;"><label for="discount">ส่วนลด (%):</label><input
-                            type="number" id="discount"></div>
-                    <div class="form-group" style="flex: 1;"><label for="discount-baht">ส่วนลด (บาท):</label><input
-                            type="number" id="discount-baht"></div>
+        <!-- Loading Overlay -->
+        <div id="loading-message"
+            class="absolute inset-0 z-50 bg-white/80 backdrop-blur-md flex flex-col items-center justify-center">
+            <div class="relative w-16 h-16">
+                <div class="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-gold-400 rounded-full border-t-transparent animate-spin">
                 </div>
-                <div class="form-group"><label for="total-boxes">จำนวนคูปอง:</label><input type="number"
-                        id="total-boxes" min="1" value="1" required></div>
-                <div class="action-buttons"><button class="btn btn-secondary">ยกเลิก</button><button
-                        class="btn btn-primary" id="save-treasure">บันทึก</button></div>
+            </div>
+            <p class="mt-4 text-gold-600 font-medium animate-pulse">กำลังค้นหาพิกัดสมบัติ...</p>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!--          BOTTOM APP BAR (RESPONSIVE ISLAND)             -->
+    <!-- ======================================================= -->
+    <!-- 
+        Mobile: Fixed bottom, left/right 4 (stretched).
+        PC/Tablet (md): Fixed bottom 8, Centered (left-1/2 -translate-x-1/2), Auto width.
+    -->
+    <div class="fixed z-40 
+                bottom-6 left-4 right-4 
+                md:bottom-10 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto">
+
+        <div class="bg-white/90 backdrop-blur-xl border border-white/50 shadow-soft p-2 flex justify-between items-center h-20 
+                    rounded-3xl md:rounded-full md:px-6 md:gap-6 md:min-w-[500px]">
+
+            <!-- Refresh Button -->
+            <button id="refresh-btn"
+                class="w-14 h-14 flex-shrink-0 flex items-center justify-center rounded-full text-gray-400 hover:text-gold-500 hover:bg-gold-100/50 transition-all duration-300">
+                <i data-lucide="rotate-cw" class="w-6 h-6"></i>
+            </button>
+
+            <!-- Role Switcher (Flex Grow on Mobile, Fixed on PC) -->
+            <div class="role-switch relative bg-gray-100 rounded-full p-1 flex items-center shadow-inner
+                        flex-grow mx-2 h-12
+                        md:flex-grow-0 md:w-64 md:mx-0">
+
+                <div id="switch-slider"
+                    class="absolute left-1 top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-br from-gold-400 to-gold-600 rounded-full shadow-md transition-all duration-300 z-0">
+                </div>
+
+                <button id="placer-btn"
+                    class="role-option relative z-10 w-1/2 text-sm font-semibold transition-colors duration-300 text-white"
+                    data-role="placer">วางคูปอง</button>
+                <button id="hunter-btn"
+                    class="role-option relative z-10 w-1/2 text-sm font-medium transition-colors duration-300 text-gray-500 hover:text-gray-700"
+                    data-role="hunter">หาคูปอง</button>
+            </div>
+
+            <!-- Profile Group -->
+            <div class="flex gap-2 flex-shrink-0">
+                <button id="location-btn"
+                    class="w-14 h-14 flex items-center justify-center rounded-full text-gray-400 hover:text-gold-500 hover:bg-gold-100/50 transition-all">
+                    <i data-lucide="locate-fixed" class="w-6 h-6"></i>
+                </button>
+                <button id="user-btn"
+                    class="w-14 h-14 flex items-center justify-center rounded-full text-gray-400 hover:text-gold-500 hover:bg-gold-100/50 transition-all relative">
+                    <i data-lucide="user-circle-2" class="w-6 h-6"></i>
+                    <span id="login-dot"
+                        class="absolute top-3 right-3 w-2.5 h-2.5 bg-green-500 rounded-full hidden border-2 border-white"></span>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL 2: View Treasure Details -->
-    <div class="modal" id="view-treasure-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">พบคูปอง!</h3><button class="close-btn">&times;</button>
+    <!-- ======================================================= -->
+    <!--             USER MENU (RESPONSIVE POSITION)             -->
+    <!-- ======================================================= -->
+    <!-- 
+        Mobile: Bottom right.
+        PC (md): Centered horizontally, appearing above the bar.
+    -->
+    <div id="user-menu" class="fixed z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 transform transition-all duration-300 opacity-0 invisible origin-bottom
+                bottom-28 right-6 w-64 translate-y-4
+                md:bottom-36 md:left-1/2 md:right-auto md:-translate-x-1/2 md:translate-y-4">
+
+        <div id="user-info-display" class="text-center font-semibold text-gray-800 pb-3 border-b border-gray-100 mb-2">
+        </div>
+        <button id="logout-btn"
+            class="w-full py-2.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl font-medium transition-colors text-sm flex items-center justify-center gap-2">
+            <i data-lucide="log-out" class="w-4 h-4"></i> ออกจากระบบ
+        </button>
+    </div>
+
+    <!-- ======================================================= -->
+    <!--                  MODALS: AUTHENTICATION                 -->
+    <!-- ======================================================= -->
+
+    <!-- Login Modal -->
+    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
+        id="login-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" id="login-backdrop">
+        </div>
+        <!-- Responsive Width & Radius -->
+        <div class="modal-content bg-white w-full rounded-t-3xl p-8 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar
+                    sm:w-[450px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">เข้าสู่ระบบ</h3>
+                <button
+                    class="close-btn text-gray-400 hover:text-gray-800 p-2 bg-gray-100 rounded-full transition-colors"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="modal-body">
-                <div class="treasure-info" id="treasure-info"></div>
-                <div class="action-buttons"><button class="btn btn-secondary">ยกเลิก</button><button
-                        class="btn btn-primary" id="next-step">ทำภารกิจ</button></div>
+            <form id="login-form" class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-gray-600 pl-1">ชื่อผู้ใช้</label>
+                    <input type="text" id="login-username"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-transparent outline-none transition-all"
+                        required placeholder="กรอกชื่อผู้ใช้">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-gray-600 pl-1">รหัสผ่าน</label>
+                    <input type="password" id="login-password"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-transparent outline-none transition-all"
+                        required placeholder="••••••••">
+                </div>
+                <button type="submit" id="login-submit-btn"
+                    class="w-full py-3.5 bg-gradient-to-r from-gold-400 to-gold-600 text-white font-semibold rounded-xl shadow-lg shadow-gold-400/30 hover:shadow-gold-400/50 transform active:scale-[0.98] transition-all mt-4">เข้าสู่ระบบ</button>
+            </form>
+            <div class="mt-6 text-center space-y-3">
+                <a href="#" id="go-to-forgot" class="text-sm text-gold-600 hover:underline">ลืมรหัสผ่าน?</a>
+                <p class="text-sm text-gray-500">ยังไม่มีบัญชี? <a href="#" id="go-to-register"
+                        class="text-gold-600 font-semibold hover:underline">สมัครสมาชิก</a></p>
             </div>
         </div>
     </div>
 
-    <!-- MODAL 3: Submit Mission Proof -->
-    <div class="modal" id="submit-proof-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">ส่งหลักฐานภารกิจ</h3><button class="close-btn">&times;</button>
+    <!-- Register Modal -->
+    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
+        id="register-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
+        <div class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar
+                    sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">สมัครสมาชิก</h3>
+                <button class="close-btn text-gray-400 hover:text-gray-800 p-2 bg-gray-100 rounded-full"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>อัปโหลดภาพหลักฐาน:</label>
-                    <div id="image-upload-box" class="image-upload-box">
-                        <input type="file" id="proof-image" accept="image/*" required>
-                        <div id="upload-placeholder" class="upload-placeholder"><i
-                                data-lucide="plus"></i><span>เพิ่มรูปภาพ</span></div>
-                        <img id="proof-preview" class="preview-image">
+            <!-- Progress Bar -->
+            <div class="flex justify-around mb-8 relative">
+                <div class="progress-step active text-center w-1/2 relative z-10 font-medium text-gold-600 transition-colors duration-300"
+                    data-step="1">
+                    <div
+                        class="w-10 h-10 rounded-full bg-gold-600 text-white flex items-center justify-center mx-auto mb-2 text-sm font-bold border-4 border-white shadow-lg shadow-gold-400/30">
+                        1</div>
+                    ข้อมูลบัญชี
+                </div>
+                <div class="progress-step text-center w-1/2 relative z-10 text-gray-400 transition-colors duration-300"
+                    data-step="2">
+                    <div
+                        class="w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-2 text-sm font-bold border-4 border-white">
+                        2</div>
+                    เกี่ยวกับคุณ
+                </div>
+                <div class="absolute top-5 left-0 w-full h-1 bg-gray-100 -z-0 transform scale-x-75 rounded-full"></div>
+            </div>
+            <form id="register-form" class="space-y-4">
+                <!-- Step 1 -->
+                <div class="form-step active-step space-y-4 animate-fadeIn" data-step="1">
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-gray-700 pl-1">ชื่อผู้ใช้</label>
+                        <input type="text" id="register-username"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:bg-white outline-none transition-all"
+                            required placeholder="ตั้งชื่อผู้ใช้">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-gray-700 pl-1">อีเมล</label>
+                        <input type="email" id="register-email"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:bg-white outline-none transition-all"
+                            required placeholder="name@example.com">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-gray-700 pl-1">รหัสผ่าน</label>
+                        <input type="password" id="register-password"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:bg-white outline-none transition-all"
+                            required placeholder="กำหนดรหัสผ่าน">
+                    </div>
+                    <div class="flex items-center gap-3 pt-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <input type="checkbox" id="policy-checkbox"
+                            class="w-5 h-5 text-gold-600 rounded border-gray-300 focus:ring-gold-500 accent-gold-500 cursor-pointer"
+                            required>
+                        <label for="policy-checkbox"
+                            class="text-sm text-gray-600 cursor-pointer select-none">ฉันได้อ่านและยอมรับ <a href="#"
+                                id="open-policy-link"
+                                class="text-gold-600 font-bold hover:underline">นโยบายความเป็นส่วนตัว</a></label>
                     </div>
                 </div>
-                <div class="action-buttons"><button class="btn btn-secondary">กลับ</button><button
-                        class="btn btn-success" id="submit-proof">ส่งหลักฐาน</button></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL 4: Display Discount Code -->
-    <div class="modal modal-static" id="discount-code-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">เเคปภาพหน้านี้ส่งให้ทางร้าน</h3><button class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="proof-section"><label>หลักฐานภารกิจ</label>
-                    <div class="image-container"><img id="proof-image-display" class="preview-image"></div>
-                </div>
-                <div class="shop-info">
-                    <div class="info-row"><span id="discount-code-display" class="discount-code"></span></div>
-                    <div class="info-row"><label>ชื่อร้าน:</label><span id="shop-name-display"></span></div>
-                    <div class="info-row"><label>ภารกิจ:</label><span id="mission-display"
-                            class="mission-content"></span></div>
-                    <div class="info-row"><label>ส่วนลด:</label><span id="discount-display"></span></div>
-                </div>
-                <div class="action-buttons2"><button class="btn2 btn-primary close-btn">ปิด</button></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ======================================================= -->
-    <!-- ================= MODALS: AUTHENTICATION ================== -->
-    <!-- ======================================================= -->
-
-    <!-- AUTH MODAL 1: Login -->
-    <div class="modal" id="login-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">เข้าสู่ระบบ</h3><button class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="login-form">
-                    <div class="form-group"><label for="login-username">ชื่อผู้ใช้:</label><input type="text"
-                            id="login-username" required></div>
-                    <div class="form-group"><label for="login-password">รหัสผ่าน:</label><input type="password"
-                            id="login-password" required></div>
-                    <div class="action-buttons"><button type="submit" class="btn btn-primary"
-                            id="login-submit-btn">เข้าสู่ระบบ</button></div>
-                </form>
-                <p class="form-forgot-password"><a href="#" id="go-to-forgot">ลืมรหัสผ่าน?</a></p>
-                <p class="form-switch-text">ยังไม่มีบัญชี? <a href="#" id="go-to-register">สมัครสมาชิก</a></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- AUTH MODAL 2: Multi-Step Register -->
-    <div class="modal" id="register-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">สมัครสมาชิก</h3><button class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="progress-bar">
-                    <div class="progress-step active" data-step="1">ข้อมูลบัญชี</div>
-                    <div class="progress-step" data-step="2">เกี่ยวกับคุณ</div>
-                </div>
-                <form id="register-form">
-                    <!-- Step 1: Account Info -->
-                    <div class="form-step active-step" data-step="1">
-                        <div class="form-group">
-                            <label for="register-username">ชื่อผู้ใช้ (สำหรับ Login):</label>
-                            <input type="text" id="register-username" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="register-email">อีเมล (สำหรับกู้รหัสผ่าน):</label>
-                            <!-- UPDATE: Change input type to "email" for browser validation -->
-                            <input type="email" id="register-email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="register-password">รหัสผ่าน:</label>
-                            <input type="password" id="register-password" required>
-                        </div>
-                        <!-- ADD: Policy Checkbox Section -->
-                        <div class="form-group-checkbox">
-                            <input type="checkbox" id="policy-checkbox" required>
-                            <label for="policy-checkbox">
-                                ฉันได้อ่านและยอมรับ
-                                <a href="#" id="open-policy-link">นโยบายความเป็นส่วนตัว</a>
+                <!-- Step 2 -->
+                <div class="form-step hidden space-y-6 animate-fadeIn" data-step="2">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-3">เพศ</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="radio-option cursor-pointer group"><input type="radio" name="gender"
+                                    value="male" class="peer hidden">
+                                <div
+                                    class="px-4 py-3 border border-gray-200 rounded-xl text-center text-gray-500 bg-white peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:text-gold-700 peer-checked:font-bold transition-all shadow-sm">
+                                    ชาย</div>
+                            </label>
+                            <label class="radio-option cursor-pointer group"><input type="radio" name="gender"
+                                    value="female" class="peer hidden">
+                                <div
+                                    class="px-4 py-3 border border-gray-200 rounded-xl text-center text-gray-500 bg-white peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:text-gold-700 peer-checked:font-bold transition-all shadow-sm">
+                                    หญิง</div>
+                            </label>
+                            <label class="radio-option cursor-pointer group"><input type="radio" name="gender"
+                                    value="lgbtq+" class="peer hidden">
+                                <div
+                                    class="px-4 py-3 border border-gray-200 rounded-xl text-center text-gray-500 bg-white peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:text-gold-700 peer-checked:font-bold transition-all shadow-sm">
+                                    LGBTQ+</div>
+                            </label>
+                            <label class="radio-option cursor-pointer group"><input type="radio" name="gender"
+                                    value="not-specified" class="peer hidden" checked>
+                                <div
+                                    class="px-4 py-3 border border-gray-200 rounded-xl text-center text-gray-500 bg-white peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:text-gold-700 peer-checked:font-bold transition-all shadow-sm">
+                                    ไม่ระบุ</div>
                             </label>
                         </div>
                     </div>
-                    <!-- Step 2: Demographics -->
-                    <div class="form-step" data-step="2">
-                        <div class="form-group"><label>เพศ:</label>
-                            <div class="radio-group">
-                                <div class="radio-option"><input type="radio" id="gender-male" name="gender"
-                                        value="male"><label for="gender-male">ชาย</label></div>
-                                <div class="radio-option"><input type="radio" id="gender-female" name="gender"
-                                        value="female"><label for="gender-female">หญิง</label></div>
-                                <div class="radio-option"><input type="radio" id="gender-lgbt" name="gender"
-                                        value="lgbtq+"><label for="gender-lgbt">LGBTQ+</label></div>
-                                <div class="radio-option"><input type="radio" id="gender-none" name="gender"
-                                        value="not-specified"><label for="gender-none">ไม่ระบุ</label></div>
-                            </div>
-                        </div>
-                        <div class="form-group"><label>ช่วงอายุ:</label>
-                            <div class="radio-group">
-                                <div class="radio-option"><input type="radio" id="age-1" name="age-range"
-                                        value="<18"><label for="age-1">น้อยกว่า 18 ปี</label></div>
-                                <div class="radio-option"><input type="radio" id="age-2" name="age-range"
-                                        value="18-25"><label for="age-2">18 - 25 ปี</label></div>
-                                <div class="radio-option"><input type="radio" id="age-3" name="age-range"
-                                        value="26-35"><label for="age-3">26 - 35 ปี</label></div>
-                                <div class="radio-option"><input type="radio" id="age-4" name="age-range"
-                                        value=">35"><label for="age-4">มากกว่า 35 ปี</label></div>
-                            </div>
-                        </div>
-                        <div class="form-group"><label>รู้จักเราจากช่องทางไหน:</label>
-                            <div class="radio-group">
-                                <div class="radio-option"><input type="radio" id="ref-fb" name="referral"
-                                        value="facebook"><label for="ref-fb">Facebook</label></div>
-                                <div class="radio-option"><input type="radio" id="ref-ig" name="referral"
-                                        value="instagram"><label for="ref-ig">Instagram (IG)</label></div>
-                                <div class="radio-option"><input type="radio" id="ref-tt" name="referral"
-                                        value="tiktok"><label for="ref-tt">TikTok</label></div>
-                                <div class="radio-option"><input type="radio" id="ref-fr" name="referral"
-                                        value="friend"><label for="ref-fr">เพื่อนชวน</label></div>
-                                <div class="radio-option"><input type="radio" id="ref-ot" name="referral"
-                                        value="other"><label for="ref-ot">อื่น ๆ</label></div>
-                            </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-3">ช่วงอายุ</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="cursor-pointer"><input type="radio" name="age-range" value="<18"
+                                    class="peer hidden">
+                                <div
+                                    class="px-3 py-2 border rounded-xl text-center text-sm peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:font-bold peer-checked:text-gold-700 transition-all">
+                                    น้อยกว่า 18 ปี</div>
+                            </label>
+                            <label class="cursor-pointer"><input type="radio" name="age-range" value="18-25"
+                                    class="peer hidden" checked>
+                                <div
+                                    class="px-3 py-2 border rounded-xl text-center text-sm peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:font-bold peer-checked:text-gold-700 transition-all">
+                                    18 - 25 ปี</div>
+                            </label>
+                            <label class="cursor-pointer"><input type="radio" name="age-range" value="26-35"
+                                    class="peer hidden">
+                                <div
+                                    class="px-3 py-2 border rounded-xl text-center text-sm peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:font-bold peer-checked:text-gold-700 transition-all">
+                                    26 - 35 ปี</div>
+                            </label>
+                            <label class="cursor-pointer"><input type="radio" name="age-range" value=">35"
+                                    class="peer hidden">
+                                <div
+                                    class="px-3 py-2 border rounded-xl text-center text-sm peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:font-bold peer-checked:text-gold-700 transition-all">
+                                    มากกว่า 35 ปี</div>
+                            </label>
                         </div>
                     </div>
-                    <div class="step-navigation"><button type="button" class="btn btn-secondary" id="register-back-btn"
-                            style="display: none;">กลับ</button><button type="button" class="btn btn-primary"
-                            id="register-next-btn">ถัดไป</button></div>
-                </form>
-                <p class="form-switch-text">มีบัญชีอยู่แล้ว? <a href="#" id="go-to-login">เข้าสู่ระบบ</a></p>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-3">รู้จักเราจากช่องทางไหน</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="cursor-pointer"><input type="radio" name="referral" value="facebook"
+                                    class="peer hidden">
+                                <div
+                                    class="px-2 py-2 border rounded-xl text-center text-xs peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:font-bold peer-checked:text-gold-700 transition-all">
+                                    Facebook</div>
+                            </label>
+                            <label class="cursor-pointer"><input type="radio" name="referral" value="tiktok"
+                                    class="peer hidden">
+                                <div
+                                    class="px-2 py-2 border rounded-xl text-center text-xs peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:font-bold peer-checked:text-gold-700 transition-all">
+                                    TikTok</div>
+                            </label>
+                            <label class="cursor-pointer"><input type="radio" name="referral" value="friend"
+                                    class="peer hidden" checked>
+                                <div
+                                    class="px-2 py-2 border rounded-xl text-center text-xs peer-checked:bg-gold-50 peer-checked:border-gold-400 peer-checked:font-bold peer-checked:text-gold-700 transition-all">
+                                    เพื่อนชวน</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="step-navigation flex gap-3 mt-8 pt-4 border-t border-gray-100">
+                    <button type="button"
+                        class="flex-1 py-3.5 text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
+                        id="register-back-btn" style="display: none;">ย้อนกลับ</button>
+                    <button type="button"
+                        class="flex-1 py-3.5 bg-gradient-to-r from-gold-400 to-gold-600 text-white font-bold rounded-xl shadow-lg shadow-gold-400/30 hover:shadow-gold-400/50 transform active:scale-[0.98] transition-all"
+                        id="register-next-btn">ถัดไป</button>
+                </div>
+            </form>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-500">มีบัญชีอยู่แล้ว? <a href="#" id="go-to-login"
+                        class="text-gold-600 font-bold hover:underline">เข้าสู่ระบบเลย</a></p>
             </div>
         </div>
     </div>
 
-    <!-- AUTH MODAL 3: Forgot Password -->
-    <div class="modal" id="forgot-password-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">ลืมรหัสผ่าน</h3><button class="close-btn">&times;</button>
+    <!-- Forgot Password Modal -->
+    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
+        id="forgot-password-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
+        <div class="modal-content bg-white w-full rounded-t-3xl p-8 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar
+                    sm:w-[450px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">ลืมรหัสผ่าน</h3>
+                <button
+                    class="close-btn text-gray-400 hover:text-gray-800 p-2 bg-gray-100 rounded-full transition-colors"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="modal-body">
-                <form id="forgot-password-form">
-                    <p class="form-info-text">กรุณากรอกอีเมลที่ใช้สมัครสมาชิก ระบบจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปให้</p>
-                    <div class="form-group"><label for="forgot-email">อีเมล:</label><input type="email"
-                            id="forgot-email" required></div>
-                    <div class="action-buttons"><button type="submit" class="btn btn-primary"
-                            id="send-reset-link-btn">ส่งลิงก์รีเซ็ต</button></div>
-                </form>
-                <p class="form-switch-text"><a href="#" id="back-to-login">กลับไปหน้าเข้าสู่ระบบ</a></p>
+            <form id="forgot-password-form" class="space-y-4">
+                <p class="text-gray-600 text-sm mb-4">กรุณากรอกอีเมลที่ใช้สมัครสมาชิก
+                    ระบบจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปให้</p>
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-gray-600 pl-1">อีเมลของคุณ</label>
+                    <input type="email" id="forgot-email"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 focus:border-transparent outline-none transition-all"
+                        required placeholder="name@example.com">
+                </div>
+                <button type="submit" id="send-reset-link-btn"
+                    class="w-full py-3.5 bg-gray-800 text-white font-semibold rounded-xl shadow-lg transform active:scale-[0.98] transition-all mt-4">ส่งลิงก์รีเซ็ต</button>
+            </form>
+            <div class="mt-6 text-center">
+                <a href="#" id="back-to-login"
+                    class="text-sm text-gold-600 font-medium hover:underline">กลับไปหน้าเข้าสู่ระบบ</a>
             </div>
         </div>
     </div>
 
-    <!-- ======================================================= -->
-    <!-- =================== MODALS: GENERAL ======================= -->
-    <!-- ======================================================= -->
-
-    <!-- GENERAL MODAL 1: Data Policy -->
-    <div class="modal" id="policy-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">นโยบายข้อมูล</h3><button class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
+    <!-- Policy Modal -->
+    <div class="modal fixed inset-0 z-[60] flex items-center justify-center pointer-events-none" id="policy-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
+        <div
+            class="modal-content bg-white w-full rounded-3xl p-6 shadow-2xl transform scale-90 transition-transform duration-300 pointer-events-auto sm:w-[450px]">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">นโยบายความเป็นส่วนตัว</h3>
+            <div class="text-gray-600 text-sm space-y-2 mb-6">
                 <p>นโยบายการจัดการข้อมูลสำหรับผู้ใช้ที่ลงทะเบียนแล้วกำลังจะมาในเร็วๆ นี้</p>
-                <p style="margin-top: 1rem;">(Data policy for registered users is coming soon.)</p>
-                <div class="action-buttons"><button class="btn btn-primary close-btn">เข้าใจแล้ว</button></div>
+                <p class="italic">(Data policy for registered users is coming soon.)</p>
             </div>
+            <button
+                class="w-full py-3 bg-gold-600 text-white font-bold rounded-xl close-btn shadow-md">เข้าใจแล้ว</button>
         </div>
     </div>
 
-    <!-- GENERAL MODAL 2: Session Expired -->
-    <div class="modal modal-static" id="session-expired-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">เซสชั่นหมดอายุ</h3>
-                <!-- No close button to force user action -->
+    <!-- ======================================================= -->
+    <!--                   MODALS: TREASURE FLOW                 -->
+    <!-- ======================================================= -->
+
+    <!-- Place Treasure Modal -->
+    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
+        id="place-treasure-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
+        <div class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar
+                    sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gold-100 rounded-full flex items-center justify-center text-gold-600"><i
+                            data-lucide="map-pin"></i></div>
+                    <h3 class="text-xl font-bold text-gray-800">วางคูปองที่นี่</h3>
+                </div>
+                <button class="close-btn text-gray-400 hover:text-gray-800"><i data-lucide="x"></i></button>
             </div>
-            <div class="modal-body">
-                <p>การเชื่อมต่อของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบอีกครั้งเพื่อใช้งานต่อ</p>
-                <div class="action-buttons">
-                    <button class="btn btn-primary" id="relogin-btn">เข้าสู่ระบบ</button>
+            <div class="space-y-4">
+                <input type="text" id="name" placeholder="ชื่อร้าน"
+                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" id="ig" placeholder="Instagram"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
+                    <input type="text" id="face" placeholder="Facebook"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
+                </div>
+                <textarea id="mission" rows="3" placeholder="รายละเอียดภารกิจ (เช่น ถ่ายรูปหน้าร้าน)"
+                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none"></textarea>
+                <div class="p-4 bg-gold-100/30 rounded-xl border border-gold-100">
+                    <label
+                        class="text-xs font-bold text-gold-600 uppercase tracking-wider mb-2 block">มูลค่ารางวัล</label>
+                    <div class="flex gap-3">
+                        <div class="relative flex-1">
+                            <input type="number" id="discount" placeholder="%"
+                                class="w-full pl-4 pr-8 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
+                            <span class="absolute right-3 top-3.5 text-gray-400 text-sm">%</span>
+                        </div>
+                        <div class="relative flex-1">
+                            <input type="number" id="discount-baht" placeholder="บาท"
+                                class="w-full pl-4 pr-8 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
+                            <span class="absolute right-3 top-3.5 text-gray-400 text-sm">฿</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <label class="text-sm font-medium text-gray-600">จำนวนคูปอง</label>
+                    <input type="number" id="total-boxes" min="1" value="1"
+                        class="w-20 text-center px-2 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold-400 outline-none">
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button
+                        class="btn-secondary flex-1 py-3 text-gray-500 font-medium hover:bg-gray-100 rounded-xl transition-colors close-btn">ยกเลิก</button>
+                    <button id="save-treasure"
+                        class="flex-1 py-3 bg-gradient-to-r from-gold-400 to-gold-600 text-white font-semibold rounded-xl shadow-lg shadow-gold-400/30 active:scale-95 transition-all">บันทึก</button>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- View Treasure Modal -->
+    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
+        id="view-treasure-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
+        <div class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto
+                    sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+            <div class="text-center mb-6">
+                <div
+                    class="w-16 h-16 bg-gradient-to-tr from-gold-400 to-yellow-300 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-gold-400/40 mb-3 rotate-3">
+                    <i data-lucide="gift" class="w-8 h-8 text-white"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800">พบคูปอง!</h3>
+                <p class="text-gray-500 text-sm">ทำภารกิจให้สำเร็จเพื่อรับส่วนลด</p>
+            </div>
+            <div id="treasure-info"
+                class="bg-gray-50 p-5 rounded-2xl border border-gray-100 text-gray-700 space-y-2 mb-6 text-sm sm:text-base">
+            </div>
+            <div class="flex gap-3">
+                <button
+                    class="btn-secondary flex-1 py-3 text-gray-500 font-medium hover:bg-gray-100 rounded-xl transition-colors close-btn">ปิด</button>
+                <button id="next-step"
+                    class="flex-1 py-3 bg-black text-white font-semibold rounded-xl shadow-lg active:scale-95 transition-all">ทำภารกิจ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Proof Modal -->
+    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
+        id="submit-proof-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
+        <div class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar
+                    sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">ส่งหลักฐาน</h3>
+                <button class="close-btn text-gray-400 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div id="image-upload-box"
+                    class="image-upload-box w-full h-64 border-2 border-dashed border-gold-400/50 bg-gold-50/30 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gold-50 transition-colors relative overflow-hidden group">
+                    <input type="file" id="proof-image" accept="image/*" class="hidden" required>
+                    <div id="upload-placeholder" class="text-center group-hover:scale-105 transition-transform">
+                        <div
+                            class="w-12 h-12 bg-white rounded-full shadow-md flex items-center justify-center mx-auto mb-2 text-gold-500">
+                            <i data-lucide="camera" class="w-6 h-6"></i>
+                        </div>
+                        <span class="text-gold-600 font-medium text-sm">แตะเพื่อถ่ายรูป/อัปโหลด</span>
+                    </div>
+                    <img id="proof-preview" class="hidden w-full h-full object-cover">
+                </div>
+                <button id="submit-proof"
+                    class="w-full py-3.5 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-lg shadow-green-500/30 transition-all active:scale-95">ยืนยันการส่ง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discount Modal -->
+    <div class="modal modal-static fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
+        id="discount-code-modal">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+        <div
+            class="modal-content bg-white w-[90%] sm:w-[400px] rounded-3xl p-0 shadow-2xl transform scale-90 transition-transform duration-300 pointer-events-auto overflow-hidden relative">
+            <!-- Golden Ticket Header -->
+            <div class="bg-gradient-to-r from-gold-400 to-gold-600 p-6 text-center relative overflow-hidden">
+                <div
+                    class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8L3N2Zz4=')] opacity-30">
+                </div>
+                <h3 class="text-white font-bold text-xl relative z-10 drop-shadow-md">ภารกิจสำเร็จ!</h3>
+                <p class="text-gold-100 text-sm relative z-10">แคปหน้าจอนี้เพื่อใช้สิทธิ์</p>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="bg-gray-100 rounded-xl p-2 border-2 border-dashed border-gray-300">
+                    <img id="proof-image-display" class="w-full h-40 object-cover rounded-lg hidden">
+                </div>
+
+                <div class="text-center space-y-1">
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Discount Code</div>
+                    <div id="discount-code-display"
+                        class="text-3xl font-mono font-bold text-gray-800 tracking-widest bg-gray-50 py-3 rounded-xl border border-gray-200 select-all">
+                        CODE123</div>
+                </div>
+
+                <div class="space-y-2 text-sm border-t border-gray-100 pt-4">
+                    <div class="flex justify-between"><span class="text-gray-500">ร้าน:</span> <span
+                            id="shop-name-display" class="font-medium text-gray-800"></span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">ส่วนลด:</span> <span
+                            id="discount-display" class="font-bold text-gold-600"></span></div>
+                </div>
+
+                <button
+                    class="w-full py-3 bg-gray-900 text-white font-medium rounded-xl close-btn shadow-lg">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!--                   CROP IMAGE MODAL                      -->
+    <!-- ======================================================= -->
+    <div id="crop-modal" class="fixed inset-0 z-[70] bg-black hidden flex-col">
+
+        <!-- Toolbar ด้านบน -->
+        <div class="flex justify-between items-center p-4 bg-gray-900 text-white z-10">
+            <button id="cancel-crop-btn" class="text-gray-400 hover:text-white font-medium">ยกเลิก</button>
+            <h3 class="font-bold text-lg">ปรับแต่งรูปภาพ</h3>
+            <button id="confirm-crop-btn" class="text-gold-400 hover:text-gold-300 font-bold">เสร็จสิ้น</button>
+        </div>
+
+        <!-- พื้นที่ Crop (สีดำ) -->
+        <div class="flex-1 relative bg-black flex items-center justify-center overflow-hidden p-4">
+            <img id="image-to-crop" src="" alt="Crop Preview" style="max-width: 100%; display: block;">
+        </div>
+
+        <!-- Toolbar ด้านล่าง (Optional controls) -->
+        <div class="p-6 bg-gray-900 flex justify-center gap-6 z-10 text-white">
+            <button id="rotate-left-btn" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white">
+                <i data-lucide="rotate-ccw" class="w-6 h-6"></i>
+                <span class="text-xs">หมุนซ้าย</span>
+            </button>
+            <button id="rotate-right-btn" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white">
+                <i data-lucide="rotate-cw" class="w-6 h-6"></i>
+                <span class="text-xs">หมุนขวา</span>
+            </button>
+            <button id="reset-crop-btn" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white">
+                <i data-lucide="refresh-ccw" class="w-6 h-6"></i>
+                <span class="text-xs">รีเซ็ต</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!--                 ROLE SWITCH ANIMATION                   -->
+    <!-- ======================================================= -->
+
+    <div id="role-loading-overlay"
+        style="display: none; position: fixed; inset: 0; z-index: 9999; background-color: #ffffff; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease;">
+        <!-- INTERNAL CSS FOR ANIMATION -->
+        <style>
+            /* The Spinning Ring (Upgraded) */
+            .premium-loader {
+                width: 80px;
+                /* Bigger size */
+                aspect-ratio: 1;
+                border-radius: 50%;
+                background:
+                    radial-gradient(farthest-side, #D4AF37 94%, #0000) top/12px 12px no-repeat,
+                    /* Gold Dot */
+                    conic-gradient(#0000 30%, #D4AF37);
+                /* Gold Trail */
+                -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 12px), #000 0);
+                animation: spinRing 0.8s infinite linear;
+                /* Faster spin */
+                filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
+                /* Golden Glow */
+            }
+
+            /* Keyframes for Spin */
+            @keyframes spinRing {
+                100% {
+                    transform: rotate(1turn);
+                }
+            }
+
+            /* Keyframes for Center Icon Pulse */
+            @keyframes pulseIcon {
+
+                0%,
+                100% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+
+                50% {
+                    transform: scale(1.2);
+                    opacity: 0.7;
+                }
+            }
+
+            .center-icon {
+                animation: pulseIcon 1.5s infinite ease-in-out;
+                color: #D4AF37;
+            }
+        </style>
+        <!-- ANIMATION CONTAINER -->
+        <div
+            style="position: relative; display: flex; align-items: center; justify-content: center; width: 100px; height: 100px;">
+            <!-- 1. The CSS Loader -->
+            <div class="premium-loader"></div>
+            <!-- 2. The Center Icon (Sparkles) -->
+            <div style="position: absolute;">
+                <i data-lucide="sparkles" class="center-icon" style="width: 32px; height: 32px;"></i>
+            </div>
+        </div>
+        <!-- LOADING TEXT (Thai) -->
+        <h2 id="role-loading-text" class="text-2xl font-bold mt-6 animate-pulse"
+            style="font-family: 'Kanit', sans-serif; color: #D4AF37; letter-spacing: 1px;">
+            กำลังเปลี่ยนโหมด...
+        </h2>
+        <p style="color: #9CA3AF; margin-top: 8px; font-family: 'Kanit', sans-serif;">เตรียมตัวออกผจญภัย...</p>
     </div>
 
     <!-- ======================================================= -->
@@ -315,7 +657,6 @@
     <!-- ======================================================= -->
     <script type="module" src="js/main.js"></script>
     <script>lucide.createIcons();</script>
-
 </body>
 
 </html>

@@ -19,8 +19,8 @@ let currentRole = 'placer'; // default role
 
 // --- CONFIGURATION ---
 const defaultCenter = [19.02759179537163, 99.926775097847];
-const BASE_TREASURE_ICON_SIZE = 24;
-const BASE_USER_ICON_SIZE = 24;
+const BASE_TREASURE_ICON_SIZE = 18;
+const BASE_USER_ICON_SIZE = 18;
 const BASE_ZOOM = 14;
 const ZOOM_SCALE_FACTOR_PER_LEVEL = 0.15;
 const MIN_SCALE = 0.25;
@@ -74,7 +74,7 @@ function updateUserLocationOnMap(location) {
     window.userMarker = L.marker([location.lat, location.lng], {
         icon: L.divIcon({
             className: 'user-location-divicon',
-            html: '<div class="current-location-icon-content">📍</div>',
+            html: '<div class="current-location-icon-content"></div>',
             iconSize: [BASE_USER_ICON_SIZE, BASE_USER_ICON_SIZE],
             iconAnchor: [BASE_USER_ICON_SIZE / 2, BASE_USER_ICON_SIZE]
         }),
@@ -169,8 +169,11 @@ function setupMapClickHandler() {
 }
 
 async function saveTreasure() {
+    // Check Auth / Guest Limit with Premium Dialog
     if (!auth.isLoggedIn() && !guest.canGuestPerformAction('place')) {
-        return alert("คุณสามารถวางคูปองได้วันละ 1 ครั้งเท่านั้น \nเข้าสู่ระบบ\nเพื่อทำรายการต่อ");
+        const confirm = await ui.showConfirmLogin('คุณใช้วางคูปองฟรีครบโควต้าวันนี้แล้ว (1 ครั้ง/วัน)\nกรุณาเข้าสู่ระบบเพื่อใช้งานต่อไม่จำกัด');
+        if (confirm) ui.showModal('login-modal');
+        return;
     }
 
     const treasureData = {
@@ -186,7 +189,7 @@ async function saveTreasure() {
     };
 
     if (!treasureData.lat || !treasureData.name || !treasureData.mission) {
-        return alert('กรุณาเลือกตำแหน่งบนแผนที่ และกรอกชื่อร้านกับภารกิจ');
+        return ui.showInfoAlert('ข้อมูลไม่ครบ', 'กรุณาเลือกตำแหน่งบนแผนที่ และกรอกชื่อร้านกับภารกิจ');
     }
 
     treasureData.remainingBoxes = treasureData.totalBoxes;
@@ -197,64 +200,124 @@ async function saveTreasure() {
         await api.createTreasure(treasureData);
         if (!auth.isLoggedIn()) guest.recordGuestAction('place');
 
-        alert('วางคูปองสำเร็จ!');
+        // Premium Success Alert
+        ui.showSuccessAlert('เรียบร้อย!', 'คูปองของคุณถูกวางลงบนแผนที่แล้ว');
+        
         await loadTreasures();
         ui.resetTreasureForm();
         ui.hideModal('place-treasure-modal');
     } catch (error) {
         console.error("Error saving treasure:", error);
-        alert("เกิดข้อผิดพลาดในการบันทึก: " + error.message);
+        ui.showErrorAlert(error.message);
     } finally {
         saveButton.disabled = false;
     }
 }
 
+/**
+ * Handles the logic when the "Submit Proof" button is clicked.
+ */
 async function submitProof() {
+    // 1. Check Guest Limits
     if (!auth.isLoggedIn() && !guest.canGuestPerformAction('open')) {
-        return alert("คุณสามารถเปิดคูปองได้วันละ 1 ครั้งเท่านั้น \nเข้าสู่ระบบ\nเพื่อทำรายการต่อ");
+        const confirm = await ui.showConfirmLogin('คุณใช้สิทธิ์เปิดคูปองฟรีครบโควต้าวันนี้แล้ว (1 ครั้ง/วัน)\nกรุณาเข้าสู่ระบบเพื่อล่าสมบัติแบบ Unlimited!');
+        if (confirm) ui.showModal('login-modal');
+        return;
     }
+
+    // 2. Validate Inputs
     if (!selectedTreasure || !document.getElementById('proof-image').files.length) {
-        return alert('กรุณาเลือกคูปองและอัปโหลดหลักฐาน');
+        return ui.showInfoAlert('หลักฐานไม่ครบ', 'กรุณาอัปโหลดรูปภาพเพื่อยืนยันภารกิจ');
     }
+
     const submitButton = document.getElementById('submit-proof');
+    
+    // 3. Set Loading State
     submitButton.disabled = true;
+    const originalText = submitButton.textContent;
+    submitButton.textContent = 'กำลังส่ง...';
 
     try {
+        // 4. Call API
         await api.claimTreasure(selectedTreasure._id);
+        
         if (!auth.isLoggedIn()) guest.recordGuestAction('open');
 
+        // 5. Success: Show Discount Code
         displayDiscountCode();
-        await loadTreasures();
+        
+        // 6. Refresh Data
+        await loadTreasures(); // Reload map to remove claimed treasure
         ui.resetProofForm();
+        
     } catch (error) {
         console.error("Error submitting proof:", error);
-        alert("เกิดข้อผิดพลาดในการส่งหลักฐาน: " + error.message);
+        
+        // Handle 404 specific error (Treasure already gone)
+        if (error.message && (error.message.includes('ไม่พบ') || error.message.includes('404'))) {
+            ui.showErrorAlert('ไม่สำเร็จ', 'คูปองนี้ถูกผู้อื่นล่าไปแล้ว หรือหมดอายุครับ');
+            // Force refresh map to remove the ghost marker
+            await loadTreasures();
+            ui.hideModal('submit-proof-modal');
+        } else {
+            ui.showErrorAlert(error.message || 'เกิดข้อผิดพลาดในการส่งข้อมูล');
+        }
     } finally {
+        // 7. Reset Button State
         submitButton.disabled = false;
+        submitButton.textContent = originalText;
     }
 }
 
+/**
+ * Update the Discount Modal with data from the selected treasure.
+ * SAFE VERSION: Checks if elements exist before setting text.
+ */
 function displayDiscountCode() {
-    document.getElementById('discount-code-display').textContent = ui.generateDiscountCode();
-    document.getElementById('shop-name-display').textContent = selectedTreasure.name || 'ไม่ระบุ';
-    document.getElementById('mission-display').textContent = selectedTreasure.mission || 'ไม่ระบุ';
-    document.getElementById('discount-display').textContent = selectedTreasure.discount ? `${selectedTreasure.discount}%` : `${selectedTreasure.discountBaht} บาท`;
+    // Generate a random code (or use one from backend if available)
+    const code = ui.generateDiscountCode();
+    
+    // 1. Update Discount Code
+    const codeEl = document.getElementById('discount-code-display');
+    if (codeEl) codeEl.textContent = code;
 
+    // 2. Update Shop Name
+    const nameEl = document.getElementById('shop-name-display');
+    if (nameEl) nameEl.textContent = selectedTreasure.name || 'Unknown Shop';
+
+    // 3. Update Mission (Optional - might not exist in new UI)
+    const missionEl = document.getElementById('mission-display');
+    if (missionEl) {
+        missionEl.textContent = selectedTreasure.mission || '-';
+    }
+
+    // 4. Update Discount Amount
+    const discountEl = document.getElementById('discount-display');
+    if (discountEl) {
+        const discountText = selectedTreasure.discount 
+            ? `${selectedTreasure.discount}%` 
+            : `${selectedTreasure.discountBaht} บาท`;
+        discountEl.textContent = discountText;
+    }
+
+    // 5. Handle Image Display
     const file = document.getElementById('proof-image').files[0];
     if (file) {
         const proofImageElement = document.getElementById('proof-image-display');
-        const reader = new FileReader();
-        reader.onload = e => {
-            proofImageElement.src = e.target.result;
-            proofImageElement.style.display = 'block'; // Set image to visible
-        };
-        reader.readAsDataURL(file);
+        if (proofImageElement) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                proofImageElement.src = e.target.result;
+                proofImageElement.style.display = 'block';
+                proofImageElement.parentElement.classList.remove('hidden'); // Ensure container is visible
+            };
+            reader.readAsDataURL(file);
+        }
     }
 
+    // 6. Switch Modals
     ui.hideModal('submit-proof-modal');
     ui.showModal('discount-code-modal');
-
-    // Screenshot logic can stay as is
 }
 
 export function setupActionHandlers() {
