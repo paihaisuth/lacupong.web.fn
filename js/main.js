@@ -6,6 +6,58 @@ import { initMap, setupActionHandlers } from './mapManager.js';
 import { hideModal, showModal, switchRole } from './uiManager.js';
 import { initTimeTracker } from './timeTracker.js';
 import { setupApiInterceptor } from './apiInterceptor.js';
+import * as gameService from './gameService.js';
+import { setUserMarkerScale, getUserMarkerScale } from './mapManager.js';
+
+const scaleSlider = document.getElementById('marker-scale-slider');
+const scaleDisplay = document.getElementById('scale-value-display');
+const previewMarker = document.getElementById('preview-marker');
+
+if (scaleSlider) {
+    // 1. Set Initial Value from Storage
+    const currentScale = getUserMarkerScale();
+    scaleSlider.value = currentScale;
+    scaleDisplay.innerText = `${Math.round(currentScale * 100)}%`;
+    if (previewMarker) previewMarker.style.transform = `scale(${currentScale})`;
+
+    // 2. Listen for Input (Real-time preview)
+    scaleSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+
+        // Update Text
+        scaleDisplay.innerText = `${Math.round(val * 100)}%`;
+
+        // Update Preview Box
+        if (previewMarker) previewMarker.style.transform = `scale(${val})`;
+
+        // Update Map Immediately
+        setUserMarkerScale(val);
+    });
+}
+
+window.switchPlaceTab = function(tab) {
+    // 1. Hide both contents
+    const tabCoupon = document.getElementById('tab-coupon');
+    const tabSign = document.getElementById('tab-sign');
+    if(tabCoupon) tabCoupon.classList.add('hidden');
+    if(tabSign) tabSign.classList.add('hidden');
+    
+    // 2. Reset Buttons
+    const btnCoupon = document.getElementById('btn-tab-coupon');
+    const btnSign = document.getElementById('btn-tab-sign');
+    
+    if(btnCoupon) btnCoupon.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500 hover:text-gray-700";
+    if(btnSign) btnSign.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500 hover:text-gray-700";
+
+    // 3. Activate Selected
+    if (tab === 'coupon') {
+        if(tabCoupon) tabCoupon.classList.remove('hidden');
+        if(btnCoupon) btnCoupon.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-gold-600 border border-gray-100";
+    } else {
+        if(tabSign) tabSign.classList.remove('hidden');
+        if(btnSign) btnSign.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600 border border-gray-100";
+    }
+};
 
 function runInitialStats() {
     logAppOpen(); // fire and forget
@@ -52,7 +104,7 @@ function setupImageUploader() {
     const proofImageInput = document.getElementById('proof-image');
     const uploadPlaceholder = document.getElementById('upload-placeholder');
     const preview = document.getElementById('proof-preview');
-    
+
     // Crop Elements
     const cropModal = document.getElementById('crop-modal');
     const imageToCrop = document.getElementById('image-to-crop');
@@ -80,7 +132,7 @@ function setupImageUploader() {
             reader.onload = (e) => {
                 // ตั้งค่ารูปที่จะ Crop
                 imageToCrop.src = e.target.result;
-                
+
                 // แสดง Modal
                 cropModal.classList.remove('hidden');
                 cropModal.classList.add('flex');
@@ -215,6 +267,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Expose gameService to window for HTML onclick events
+    window.gameService = gameService;
+    // Init Game Service (Load profile)
+    gameService.initGameService();
+
+    // Setup Event Listeners
+    const rewardBtn = document.getElementById('daily-reward-btn');
+    if (rewardBtn) rewardBtn.addEventListener('click', gameService.claimDailyReward);
+
+    const saveAvatarBtn = document.getElementById('save-avatar-btn');
+    if (saveAvatarBtn) saveAvatarBtn.addEventListener('click', gameService.saveAvatarChanges);
+
+    // Modify User Button to open Game Profile/Editor if logged in
+    const userBtn = document.getElementById('user-btn');
+    // Remove old listener if you want to replace behavior, or add logic inside auth.js
+    // Ideally, update auth.js to handle opening the editor
+
+    // Quick Fix for Customization Trigger:
+    // Add a button inside your existing User Menu (auth.js logic) or add a separate button.
+    // For now, let's make double-clicking the avatar open the editor
+    userBtn.addEventListener('dblclick', () => {
+        gameService.openAvatarEditor();
+    });
 
     //console.log("Application Initialized");
 });

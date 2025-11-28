@@ -4,10 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Golden Ticket - แผนที่ล่าสมบัติ</title>
+    <title>Golden Ticket - Premium Hunt</title>
 
     <!-- 1. Tailwind CSS -->
     <link href="css/output.css" rel="stylesheet">
+    <!-- Fallback CDN for arbitrary values -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -19,16 +21,18 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-    <!-- 2. SweetAlert2 -->
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <!-- Cropper.js CSS -->
+    <!-- Cropper.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
-    <!-- Cropper.js JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/styles.css" />
+
+    <!-- Game Service Script -->
+    <script type="module" src="js/gameService.js"></script>
 
     <style>
         body {
@@ -48,6 +52,32 @@
         .no-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
+        }
+
+        /* Glass Effect for Panels */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(229, 231, 235, 1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Tabs */
+        .tab-active {
+            background-color: #FBBF24;
+            /* Amber-400 */
+            color: white;
+            border-color: #FBBF24;
+        }
+
+        .tab-inactive {
+            background-color: #F9FAFB;
+            /* Gray-50 */
+            color: #6B7280;
+            /* Gray-500 */
+            border-color: #E5E7EB;
+            /* Gray-200 */
         }
     </style>
 </head>
@@ -73,18 +103,51 @@
     </div>
 
     <!-- ======================================================= -->
+    <!--             TOP BAR (RIGHT ALIGNED)                     -->
+    <!-- ======================================================= -->
+    <div class="absolute top-0 left-0 w-full z-30 p-4 pointer-events-none">
+        <div class="flex justify-end items-start max-w-5xl mx-auto gap-3">
+
+            <!-- 1. Daily Reward Button -->
+            <button id="daily-reward-btn"
+                class="pointer-events-auto bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-green-600 transition-colors animate-pulse border-2 border-white ring-1 ring-green-200">
+                <i data-lucide="gift" class="w-5 h-5"></i>
+            </button>
+
+            <!-- 2. Coin Balance -->
+            <div class="glass-panel rounded-full px-4 py-2 flex items-center gap-2 h-10 shadow-lg pointer-events-auto cursor-pointer hover:bg-white transition-colors coin-balance-container"
+                onclick="window.gameService.openShopModal()">
+                <div
+                    class="w-5 h-5 rounded-full bg-yellow-400 flex items-center justify-center text-yellow-900 shadow-sm border border-yellow-300">
+                    <i data-lucide="shopping-bag" class="w-3 h-3"></i>
+                </div>
+                <span class="font-bold text-gray-800 coin-balance-display text-sm">0</span>
+            </div>
+
+            <!-- 3. Profile Pill (Avatar + Name) -->
+            <div class="glass-panel rounded-full p-1 pl-4 flex items-center gap-3 pointer-events-auto cursor-pointer transition-transform hover:scale-105 h-12 shadow-lg"
+                onclick="window.gameService.openAvatarEditor()">
+                <div class="text-right">
+                    <div class="text-[9px] text-yellow-600 font-bold uppercase tracking-wider">Hunter</div>
+                    <div class="text-gray-800 font-bold leading-none text-xs" id="user-info-display-top">Guest</div>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center border-2 border-white overflow-hidden shadow-inner relative"
+                    id="top-avatar-display">
+                    <!-- Default Icon (JS will replace) -->
+                    <i data-lucide="user" class="text-gray-400 w-5 h-5"></i>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
     <!--          BOTTOM APP BAR (RESPONSIVE ISLAND)             -->
     <!-- ======================================================= -->
-    <!-- 
-        Mobile: Fixed bottom, left/right 4 (stretched).
-        PC/Tablet (md): Fixed bottom 8, Centered (left-1/2 -translate-x-1/2), Auto width.
-    -->
-    <div class="fixed z-40 
-                bottom-6 left-4 right-4 
-                md:bottom-10 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto">
-
-        <div class="bg-white/90 backdrop-blur-xl border border-white/50 shadow-soft p-2 flex justify-between items-center h-20 
-                    rounded-3xl md:rounded-full md:px-6 md:gap-6 md:min-w-[500px]">
+    <div
+        class="fixed z-40 bottom-6 left-4 right-4 md:bottom-10 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto">
+        <div
+            class="bg-white/90 backdrop-blur-xl border border-white/50 shadow-soft p-2 flex justify-between items-center h-20 rounded-3xl md:rounded-full md:px-6 md:gap-6 md:min-w-[500px]">
 
             <!-- Refresh Button -->
             <button id="refresh-btn"
@@ -92,15 +155,12 @@
                 <i data-lucide="rotate-cw" class="w-6 h-6"></i>
             </button>
 
-            <!-- Role Switcher (Flex Grow on Mobile, Fixed on PC) -->
-            <div class="role-switch relative bg-gray-100 rounded-full p-1 flex items-center shadow-inner
-                        flex-grow mx-2 h-12
-                        md:flex-grow-0 md:w-64 md:mx-0">
-
+            <!-- Role Switcher -->
+            <div
+                class="role-switch relative bg-gray-100 rounded-full p-1 flex items-center shadow-inner flex-grow mx-2 h-12 md:flex-grow-0 md:w-64 md:mx-0">
                 <div id="switch-slider"
                     class="absolute left-1 top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-br from-gold-400 to-gold-600 rounded-full shadow-md transition-all duration-300 z-0">
                 </div>
-
                 <button id="placer-btn"
                     class="role-option relative z-10 w-1/2 text-sm font-semibold transition-colors duration-300 text-white"
                     data-role="placer">วางคูปอง</button>
@@ -109,7 +169,7 @@
                     data-role="hunter">หาคูปอง</button>
             </div>
 
-            <!-- Profile Group -->
+            <!-- Bottom Right Group -->
             <div class="flex gap-2 flex-shrink-0">
                 <button id="location-btn"
                     class="w-14 h-14 flex items-center justify-center rounded-full text-gray-400 hover:text-gold-500 hover:bg-gold-100/50 transition-all">
@@ -117,7 +177,7 @@
                 </button>
                 <button id="user-btn"
                     class="w-14 h-14 flex items-center justify-center rounded-full text-gray-400 hover:text-gold-500 hover:bg-gold-100/50 transition-all relative">
-                    <i data-lucide="user-circle-2" class="w-6 h-6"></i>
+                    <i data-lucide="settings-2" class="w-6 h-6"></i>
                     <span id="login-dot"
                         class="absolute top-3 right-3 w-2.5 h-2.5 bg-green-500 rounded-full hidden border-2 border-white"></span>
                 </button>
@@ -125,27 +185,305 @@
         </div>
     </div>
 
-    <!-- ======================================================= -->
-    <!--             USER MENU (RESPONSIVE POSITION)             -->
-    <!-- ======================================================= -->
-    <!-- 
-        Mobile: Bottom right.
-        PC (md): Centered horizontally, appearing above the bar.
-    -->
-    <div id="user-menu" class="fixed z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 transform transition-all duration-300 opacity-0 invisible origin-bottom
-                bottom-28 right-6 w-64 translate-y-4
-                md:bottom-36 md:left-1/2 md:right-auto md:-translate-x-1/2 md:translate-y-4">
+    <!-- User Menu (Settings) -->
+    <div id="user-menu" class="fixed z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 transform transition-all duration-300 opacity-0 invisible origin-bottom-right
+            bottom-28 right-4 w-64 translate-y-4
+            md:bottom-32 md:left-auto md:right-[calc(50%-240px)] md:translate-y-4">
+        <!-- Logic: 50% (Center) - 250px (Half Bar Width) + 10px (Padding) = Aligns with right side of bar -->
 
         <div id="user-info-display" class="text-center font-semibold text-gray-800 pb-3 border-b border-gray-100 mb-2">
         </div>
+
+        <button onclick="window.gameService.openAvatarEditor()"
+            class="w-full py-3 text-gray-600 hover:bg-yellow-50 hover:text-yellow-700 rounded-xl font-medium transition-colors text-sm flex items-center justify-start gap-3 px-4 mb-1">
+            <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600"><i
+                    data-lucide="shirt" class="w-4 h-4"></i></div>
+            แต่งตัวละคร
+        </button>
+
+        <!-- NEW: Settings Button -->
+        <button onclick="document.getElementById('settings-modal').classList.add('show')"
+            class="w-full py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-xl font-medium transition-colors text-sm flex items-center justify-start gap-3 px-4 mt-1">
+            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500"><i
+                    data-lucide="sliders-horizontal" class="w-4 h-4"></i></div>
+            ตั้งค่า
+        </button>
+
         <button id="logout-btn"
-            class="w-full py-2.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl font-medium transition-colors text-sm flex items-center justify-center gap-2">
-            <i data-lucide="log-out" class="w-4 h-4"></i> ออกจากระบบ
+            class="w-full py-3 text-red-500 hover:bg-red-50 rounded-xl font-medium transition-colors text-sm flex items-center justify-start gap-3 px-4 mt-1">
+            <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i
+                    data-lucide="log-out" class="w-4 h-4"></i></div>
+            ออกจากระบบ
         </button>
     </div>
 
     <!-- ======================================================= -->
-    <!--                  MODALS: AUTHENTICATION                 -->
+    <!--            MODAL: PLACE TREASURE / SIGN                 -->
+    <!-- ======================================================= -->
+    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
+        id="place-treasure-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
+
+        <!-- UPDATED: Added 'pt-12' for top spacing, ensuring tabs don't hit the close button -->
+        <div
+            class="modal-content bg-white w-full rounded-t-3xl p-6 pt-12 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95 relative">
+
+            <!-- UPDATED: Close Button Position -->
+            <button
+                class="close-btn absolute top-3 right-3 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500 hover:text-red-500 transition-all z-20 shadow-sm">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <!-- Tabs -->
+            <div class="flex mb-6 border bg-gray-100 p-1 rounded-xl">
+                <button id="btn-tab-coupon" onclick="switchPlaceTab('coupon')"
+                    class="flex-1 py-2 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-gold-600">
+                    🎟️ วางคูปอง
+                </button>
+                <button id="btn-tab-sign" onclick="switchPlaceTab('sign')"
+                    class="flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500 hover:text-gray-700">
+                    🚩 ปักป้าย
+                </button>
+            </div>
+
+            <!-- TAB 1: COUPON -->
+            <div id="tab-coupon" class="space-y-4 animate-fadeIn">
+                <!-- ... Inputs (Same as before) ... -->
+                <input type="text" id="name" placeholder="ชื่อร้าน"
+                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
+                <textarea id="mission" rows="2" placeholder="ภารกิจ (เช่น ถ่ายรูปหน้าร้าน)"
+                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none"></textarea>
+                <div class="flex gap-3">
+                    <input type="number" id="discount" placeholder="% ส่วนลด"
+                        class="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
+                    <input type="number" id="discount-baht" placeholder="฿ ส่วนลด"
+                        class="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
+                </div>
+                <input type="number" id="total-boxes" value="1" min="1"
+                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none"
+                    placeholder="จำนวนคูปอง">
+
+                <input type="hidden" id="ig"><input type="hidden" id="face">
+                <button id="save-treasure"
+                    class="w-full py-3.5 bg-gradient-to-r from-gold-400 to-gold-600 text-white font-bold rounded-xl shadow-lg active:scale-95 transition-all">วางคูปอง</button>
+            </div>
+
+            <!-- TAB 2: SIGN -->
+            <div id="tab-sign" class="space-y-4 hidden animate-fadeIn">
+                <div
+                    class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800 flex gap-3 items-start">
+                    <i data-lucide="info" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                    <div>
+                        <p class="font-bold">พื้นที่พูดคุย</p>
+                        <p class="text-xs opacity-75">ใช้สำหรับทักทาย หรือแจ้งข่าวสาร (หายใน 24 ชม.)</p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <input type="text" id="sign-message" maxlength="16" placeholder="ข้อความสั้นๆ..."
+                        class="w-full px-4 py-4 bg-white border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 outline-none font-bold text-center text-xl text-gray-800 placeholder-gray-300">
+                    <div class="absolute right-3 top-5 text-[10px] text-gray-400 font-mono">MAX 16</div>
+                </div>
+
+                <button onclick="import('./js/mapManager.js').then(m => m.placeSign())"
+                    class="w-full py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-400/30 active:scale-95 transition-all">
+                    ปักป้ายเลย
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!--            MODAL: VIEW SIGN (NEW)                       -->
+    <!-- ======================================================= -->
+    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
+        id="view-sign-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
+        <div
+            class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[450px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">ป้ายประกาศ</h3>
+                <button class="close-btn text-gray-400 hover:text-gray-800"><i data-lucide="x"></i></button>
+            </div>
+
+            <!-- Dynamic Content Injected by JS -->
+            <div id="view-sign-content"></div>
+
+            <div class="flex gap-2 mt-4 border-t pt-3">
+                <input type="text" id="comment-input" placeholder="พิมพ์คอมเมนต์..."
+                    class="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-full focus:border-blue-400 outline-none text-sm">
+                <button id="send-comment-btn"
+                    class="bg-blue-500 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-600 transition shadow-md">
+                    <i data-lucide="send" class="w-4 h-4 ml-0.5"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!--                 MODAL: SETTINGS (NEW)                   -->
+    <!-- ======================================================= -->
+    <div class="modal fixed inset-0 z-[70] flex items-end justify-center pointer-events-none sm:items-center"
+        id="settings-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"
+            onclick="this.parentElement.classList.remove('show')"></div>
+        <div
+            class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[400px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600"><i
+                            data-lucide="settings" class="w-4 h-4"></i></div>
+                    <h3 class="text-xl font-bold text-gray-800">ตั้งค่าการแสดงผล</h3>
+                </div>
+                <button class="close-btn text-gray-400 hover:text-gray-800 p-1 bg-gray-50 rounded-full"
+                    onclick="document.getElementById('settings-modal').classList.remove('show')"><i data-lucide="x"
+                        class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Marker Size Slider -->
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="text-sm font-bold text-gray-700">ขนาดไอคอนบนแผนที่</label>
+                        <span id="scale-value-display"
+                            class="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-500">100%</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-gray-400 transform scale-75"></i>
+                        <input type="range" id="marker-scale-slider" min="0.5" max="1.5" step="0.1" value="1"
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gold-500">
+                        <i data-lucide="map-pin" class="w-6 h-6 text-gray-400"></i>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">ปรับขนาดของสมบัติและโปรไฟล์ผู้เล่น (Min: 50%, Max: 150%)</p>
+                </div>
+
+                <!-- Preview Box -->
+                <div
+                    class="bg-gray-50 rounded-xl p-4 flex justify-center items-center h-24 border border-gray-100 overflow-hidden relative">
+                    <div class="absolute inset-0 opacity-10"
+                        style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 10px 10px;">
+                    </div>
+                    <!-- Fake Marker for Preview -->
+                    <div id="preview-marker" class="transition-transform duration-200">
+                        <div
+                            class="w-12 h-12 rounded-full bg-white border-2 border-white shadow-md flex items-center justify-center text-2xl">
+                            😎</div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="document.getElementById('settings-modal').classList.remove('show')"
+                class="w-full mt-6 py-3 bg-black text-white font-bold rounded-xl shadow-lg active:scale-95 transition-transform">
+                บันทึกการตั้งค่า
+            </button>
+        </div>
+    </div>
+
+<!-- ======================================================= -->
+    <!--             MODAL: AVATAR CUSTOMIZATION (V2)            -->
+    <!-- ======================================================= -->
+    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center" id="modal-avatar-editor">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" onclick="this.parentElement.classList.remove('show')"></div>
+        <div class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[400px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+            <div class="relative">
+                <button class="close-btn absolute top-0 right-0 text-gray-400 hover:text-red-500 transition-colors" onclick="this.closest('.modal').classList.remove('show')"><i data-lucide="x"></i></button>
+                <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">แต่งตัวละคร</h2>
+                
+                <!-- Preview -->
+                <div class="flex justify-center mb-6">
+                    <div id="avatar-editor-preview" class="w-40 h-40 bg-gray-50 rounded-full border-4 border-yellow-400 shadow-xl overflow-hidden relative"></div>
+                </div>
+
+                <!-- Customization Sections -->
+                <div class="space-y-5 pr-2 max-h-[40vh] overflow-y-auto custom-scrollbar">
+                    
+                    <!-- 1. SKIN COLOR -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs text-gray-500 font-bold uppercase tracking-wider">สีผิว</span>
+                            <button onclick="window.gameService.openShopModal()" class="text-[10px] text-blue-500 font-bold hover:underline flex items-center gap-1">
+                                <i data-lucide="shopping-bag" class="w-3 h-3"></i> ไปร้านค้า
+                            </button>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-wrap gap-3 justify-center" id="editor-skin-options">
+                            <!-- Basic Skins -->
+                            <button style="background-color: #fca;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200" onclick="window.gameService.setAvatarProp('skin', '#fca')"></button>
+                            <button style="background-color: #e0ac69;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200" onclick="window.gameService.setAvatarProp('skin', '#e0ac69')"></button>
+                            <button style="background-color: #8d5524;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200" onclick="window.gameService.setAvatarProp('skin', '#8d5524')"></button>
+                            <button style="background-color: #5c3a1e;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200" onclick="window.gameService.setAvatarProp('skin', '#5c3a1e')"></button>
+                            <!-- Premium Skins (Dynamic JS will append here if owned) -->
+                        </div>
+                    </div>
+
+                    <!-- 2. SHIRT COLOR -->
+                    <div>
+                        <span class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2 block">สีเสื้อ</span>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-wrap gap-3 justify-center" id="editor-shirt-options">
+                            <button style="background-color: #ef4444;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition" onclick="window.gameService.setAvatarProp('shirt', '#ef4444')"></button>
+                            <button style="background-color: #3b82f6;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition" onclick="window.gameService.setAvatarProp('shirt', '#3b82f6')"></button>
+                            <button style="background-color: #22c55e;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition" onclick="window.gameService.setAvatarProp('shirt', '#22c55e')"></button>
+                            <button style="background-color: #a855f7;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition" onclick="window.gameService.setAvatarProp('shirt', '#a855f7')"></button>
+                            <button style="background-color: #1f2937;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition" onclick="window.gameService.setAvatarProp('shirt', '#1f2937')"></button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <button id="save-avatar-btn" class="w-full mt-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-bold text-lg shadow-lg active:scale-95 transition transform">
+                    บันทึกการแต่งตัว
+                </button>
+            </div>
+        </div>
+    </div>
+
+<!-- ======================================================= -->
+    <!--                 MODAL: ITEM SHOP (UPDATED)              -->
+    <!-- ======================================================= -->
+    <div class="modal fixed inset-0 z-[70] flex items-end justify-center pointer-events-none sm:items-center" id="shop-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" onclick="this.parentElement.classList.remove('show')"></div>
+        
+        <!-- FIX: เพิ่ม max-h-[80vh] และ flex flex-col เพื่อให้ scroll ได้ถ้าจอเล็ก -->
+        <div class="modal-content bg-gray-50 w-full rounded-t-3xl p-5 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[420px] sm:rounded-3xl sm:translate-y-10 sm:scale-95 max-h-[80vh] flex flex-col">
+            
+            <!-- Header (Fixed) -->
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 shadow-inner">
+                        <i data-lucide="store" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 leading-tight">ร้านค้าไอเทม</h3>
+                        <p id="coin-rate-text" class="text-[10px] text-gray-500">ออนไลน์ครบ 1 นาที รับฟรี 5 เหรียญ!</p>
+                    </div>
+                </div>
+                <button class="close-btn p-1.5 bg-white rounded-full shadow-sm text-gray-400 hover:text-gray-800" onclick="document.getElementById('shop-modal').classList.remove('show')"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <!-- Coin Balance (Fixed) -->
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center mb-3 flex-shrink-0">
+                <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">เหรียญของคุณ</span>
+                <div class="flex items-center gap-1.5 bg-yellow-50 px-3 py-1 rounded-lg border border-yellow-100">
+                    <i data-lucide="coins" class="w-3.5 h-3.5 text-yellow-500"></i>
+                    <span class="font-bold text-yellow-700 coin-balance-display text-sm">0</span>
+                </div>
+            </div>
+
+            <!-- Items Grid (Scrollable) -->
+            <!-- FIX: overflow-y-auto ที่นี่ เพื่อให้เลื่อนเฉพาะสินค้า -->
+            <div id="shop-items-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
+                <!-- JS Will Inject Items Here -->
+                <div class="col-span-full text-center py-8 text-gray-400">
+                    <div class="animate-spin w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full mx-auto mb-2"></div>
+                    <span class="text-xs">กำลังโหลดสินค้า...</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!--             EXISTING MODALS (Login, Register, etc.)     -->
     <!-- ======================================================= -->
 
     <!-- Login Modal -->
@@ -153,9 +491,8 @@
         id="login-modal">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" id="login-backdrop">
         </div>
-        <!-- Responsive Width & Radius -->
-        <div class="modal-content bg-white w-full rounded-t-3xl p-8 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar
-                    sm:w-[450px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+        <div
+            class="modal-content bg-white w-full rounded-t-3xl p-8 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[450px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold text-gray-800">เข้าสู่ระบบ</h3>
                 <button
@@ -190,8 +527,8 @@
     <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
         id="register-modal">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
-        <div class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar
-                    sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+        <div
+            class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold text-gray-800">สมัครสมาชิก</h3>
                 <button class="close-btn text-gray-400 hover:text-gray-800 p-2 bg-gray-100 rounded-full"><i
@@ -350,8 +687,8 @@
     <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
         id="forgot-password-modal">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
-        <div class="modal-content bg-white w-full rounded-t-3xl p-8 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar
-                    sm:w-[450px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+        <div
+            class="modal-content bg-white w-full rounded-t-3xl p-8 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[450px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold text-gray-800">ลืมรหัสผ่าน</h3>
                 <button
@@ -377,87 +714,12 @@
         </div>
     </div>
 
-    <!-- Policy Modal -->
-    <div class="modal fixed inset-0 z-[60] flex items-center justify-center pointer-events-none" id="policy-modal">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
-        <div
-            class="modal-content bg-white w-full rounded-3xl p-6 shadow-2xl transform scale-90 transition-transform duration-300 pointer-events-auto sm:w-[450px]">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">นโยบายความเป็นส่วนตัว</h3>
-            <div class="text-gray-600 text-sm space-y-2 mb-6">
-                <p>นโยบายการจัดการข้อมูลสำหรับผู้ใช้ที่ลงทะเบียนแล้วกำลังจะมาในเร็วๆ นี้</p>
-                <p class="italic">(Data policy for registered users is coming soon.)</p>
-            </div>
-            <button
-                class="w-full py-3 bg-gold-600 text-white font-bold rounded-xl close-btn shadow-md">เข้าใจแล้ว</button>
-        </div>
-    </div>
-
-    <!-- ======================================================= -->
-    <!--                   MODALS: TREASURE FLOW                 -->
-    <!-- ======================================================= -->
-
-    <!-- Place Treasure Modal -->
-    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
-        id="place-treasure-modal">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
-        <div class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar
-                    sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
-            <div class="flex justify-between items-center mb-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gold-100 rounded-full flex items-center justify-center text-gold-600"><i
-                            data-lucide="map-pin"></i></div>
-                    <h3 class="text-xl font-bold text-gray-800">วางคูปองที่นี่</h3>
-                </div>
-                <button class="close-btn text-gray-400 hover:text-gray-800"><i data-lucide="x"></i></button>
-            </div>
-            <div class="space-y-4">
-                <input type="text" id="name" placeholder="ชื่อร้าน"
-                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="ig" placeholder="Instagram"
-                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
-                    <input type="text" id="face" placeholder="Facebook"
-                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
-                </div>
-                <textarea id="mission" rows="3" placeholder="รายละเอียดภารกิจ (เช่น ถ่ายรูปหน้าร้าน)"
-                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none"></textarea>
-                <div class="p-4 bg-gold-100/30 rounded-xl border border-gold-100">
-                    <label
-                        class="text-xs font-bold text-gold-600 uppercase tracking-wider mb-2 block">มูลค่ารางวัล</label>
-                    <div class="flex gap-3">
-                        <div class="relative flex-1">
-                            <input type="number" id="discount" placeholder="%"
-                                class="w-full pl-4 pr-8 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
-                            <span class="absolute right-3 top-3.5 text-gray-400 text-sm">%</span>
-                        </div>
-                        <div class="relative flex-1">
-                            <input type="number" id="discount-baht" placeholder="บาท"
-                                class="w-full pl-4 pr-8 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
-                            <span class="absolute right-3 top-3.5 text-gray-400 text-sm">฿</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <label class="text-sm font-medium text-gray-600">จำนวนคูปอง</label>
-                    <input type="number" id="total-boxes" min="1" value="1"
-                        class="w-20 text-center px-2 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-gold-400 outline-none">
-                </div>
-                <div class="flex gap-3 pt-4">
-                    <button
-                        class="btn-secondary flex-1 py-3 text-gray-500 font-medium hover:bg-gray-100 rounded-xl transition-colors close-btn">ยกเลิก</button>
-                    <button id="save-treasure"
-                        class="flex-1 py-3 bg-gradient-to-r from-gold-400 to-gold-600 text-white font-semibold rounded-xl shadow-lg shadow-gold-400/30 active:scale-95 transition-all">บันทึก</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- View Treasure Modal -->
     <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
         id="view-treasure-modal">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
-        <div class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto
-                    sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+        <div
+            class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
             <div class="text-center mb-6">
                 <div
                     class="w-16 h-16 bg-gradient-to-tr from-gold-400 to-yellow-300 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-gold-400/40 mb-3 rotate-3">
@@ -482,8 +744,8 @@
     <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
         id="submit-proof-modal">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
-        <div class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar
-                    sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+        <div
+            class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto max-h-[90vh] overflow-y-auto no-scrollbar sm:w-[500px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-gray-800">ส่งหลักฐาน</h3>
                 <button class="close-btn text-gray-400 hover:text-gray-800"><i data-lucide="x"></i></button>
@@ -513,7 +775,6 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
         <div
             class="modal-content bg-white w-[90%] sm:w-[400px] rounded-3xl p-0 shadow-2xl transform scale-90 transition-transform duration-300 pointer-events-auto overflow-hidden relative">
-            <!-- Golden Ticket Header -->
             <div class="bg-gradient-to-r from-gold-400 to-gold-600 p-6 text-center relative overflow-hidden">
                 <div
                     class="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8L3N2Zz4=')] opacity-30">
@@ -521,100 +782,82 @@
                 <h3 class="text-white font-bold text-xl relative z-10 drop-shadow-md">ภารกิจสำเร็จ!</h3>
                 <p class="text-gold-100 text-sm relative z-10">แคปหน้าจอนี้เพื่อใช้สิทธิ์</p>
             </div>
-
             <div class="p-6 space-y-4">
-                <div class="bg-gray-100 rounded-xl p-2 border-2 border-dashed border-gray-300">
-                    <img id="proof-image-display" class="w-full h-40 object-cover rounded-lg hidden">
-                </div>
-
+                <div class="bg-gray-100 rounded-xl p-2 border-2 border-dashed border-gray-300"><img
+                        id="proof-image-display" class="w-full h-40 object-cover rounded-lg hidden"></div>
                 <div class="text-center space-y-1">
                     <div class="text-xs text-gray-500 uppercase tracking-wide">Discount Code</div>
                     <div id="discount-code-display"
                         class="text-3xl font-mono font-bold text-gray-800 tracking-widest bg-gray-50 py-3 rounded-xl border border-gray-200 select-all">
                         CODE123</div>
                 </div>
-
                 <div class="space-y-2 text-sm border-t border-gray-100 pt-4">
                     <div class="flex justify-between"><span class="text-gray-500">ร้าน:</span> <span
                             id="shop-name-display" class="font-medium text-gray-800"></span></div>
                     <div class="flex justify-between"><span class="text-gray-500">ส่วนลด:</span> <span
                             id="discount-display" class="font-bold text-gold-600"></span></div>
                 </div>
-
                 <button
                     class="w-full py-3 bg-gray-900 text-white font-medium rounded-xl close-btn shadow-lg">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
 
-    <!-- ======================================================= -->
-    <!--                   CROP IMAGE MODAL                      -->
-    <!-- ======================================================= -->
+    <!-- Crop Image Modal -->
     <div id="crop-modal" class="fixed inset-0 z-[70] bg-black hidden flex-col">
-
-        <!-- Toolbar ด้านบน -->
         <div class="flex justify-between items-center p-4 bg-gray-900 text-white z-10">
             <button id="cancel-crop-btn" class="text-gray-400 hover:text-white font-medium">ยกเลิก</button>
             <h3 class="font-bold text-lg">ปรับแต่งรูปภาพ</h3>
             <button id="confirm-crop-btn" class="text-gold-400 hover:text-gold-300 font-bold">เสร็จสิ้น</button>
         </div>
-
-        <!-- พื้นที่ Crop (สีดำ) -->
         <div class="flex-1 relative bg-black flex items-center justify-center overflow-hidden p-4">
             <img id="image-to-crop" src="" alt="Crop Preview" style="max-width: 100%; display: block;">
         </div>
-
-        <!-- Toolbar ด้านล่าง (Optional controls) -->
         <div class="p-6 bg-gray-900 flex justify-center gap-6 z-10 text-white">
-            <button id="rotate-left-btn" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white">
-                <i data-lucide="rotate-ccw" class="w-6 h-6"></i>
-                <span class="text-xs">หมุนซ้าย</span>
-            </button>
-            <button id="rotate-right-btn" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white">
-                <i data-lucide="rotate-cw" class="w-6 h-6"></i>
-                <span class="text-xs">หมุนขวา</span>
-            </button>
-            <button id="reset-crop-btn" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white">
-                <i data-lucide="refresh-ccw" class="w-6 h-6"></i>
-                <span class="text-xs">รีเซ็ต</span>
-            </button>
+            <button id="rotate-left-btn" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white"><i
+                    data-lucide="rotate-ccw" class="w-6 h-6"></i><span class="text-xs">หมุนซ้าย</span></button>
+            <button id="rotate-right-btn" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white"><i
+                    data-lucide="rotate-cw" class="w-6 h-6"></i><span class="text-xs">หมุนขวา</span></button>
+            <button id="reset-crop-btn" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white"><i
+                    data-lucide="refresh-ccw" class="w-6 h-6"></i><span class="text-xs">รีเซ็ต</span></button>
         </div>
     </div>
 
-    <!-- ======================================================= -->
-    <!--                 ROLE SWITCH ANIMATION                   -->
-    <!-- ======================================================= -->
+    <!-- Policy Modal -->
+    <div class="modal fixed inset-0 z-[60] flex items-center justify-center pointer-events-none" id="policy-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
+        <div
+            class="modal-content bg-white w-full rounded-3xl p-6 shadow-2xl transform scale-90 transition-transform duration-300 pointer-events-auto sm:w-[450px]">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">นโยบายความเป็นส่วนตัว</h3>
+            <div class="text-gray-600 text-sm space-y-2 mb-6">
+                <p>นโยบายการจัดการข้อมูลสำหรับผู้ใช้ที่ลงทะเบียนแล้วกำลังจะมาในเร็วๆ นี้</p>
+                <p class="italic">(Data policy for registered users is coming soon.)</p>
+            </div>
+            <button
+                class="w-full py-3 bg-gold-600 text-white font-bold rounded-xl close-btn shadow-md">เข้าใจแล้ว</button>
+        </div>
+    </div>
 
+    <!-- Role Switch Animation -->
     <div id="role-loading-overlay"
         style="display: none; position: fixed; inset: 0; z-index: 9999; background-color: #ffffff; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease;">
-        <!-- INTERNAL CSS FOR ANIMATION -->
         <style>
-            /* The Spinning Ring (Upgraded) */
             .premium-loader {
                 width: 80px;
-                /* Bigger size */
                 aspect-ratio: 1;
                 border-radius: 50%;
-                background:
-                    radial-gradient(farthest-side, #D4AF37 94%, #0000) top/12px 12px no-repeat,
-                    /* Gold Dot */
-                    conic-gradient(#0000 30%, #D4AF37);
-                /* Gold Trail */
+                background: radial-gradient(farthest-side, #D4AF37 94%, #0000) top/12px 12px no-repeat, conic-gradient(#0000 30%, #D4AF37);
                 -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 12px), #000 0);
                 animation: spinRing 0.8s infinite linear;
-                /* Faster spin */
                 filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
-                /* Golden Glow */
             }
 
-            /* Keyframes for Spin */
             @keyframes spinRing {
                 100% {
                     transform: rotate(1turn);
                 }
             }
 
-            /* Keyframes for Center Icon Pulse */
             @keyframes pulseIcon {
 
                 0%,
@@ -634,27 +877,18 @@
                 color: #D4AF37;
             }
         </style>
-        <!-- ANIMATION CONTAINER -->
         <div
             style="position: relative; display: flex; align-items: center; justify-content: center; width: 100px; height: 100px;">
-            <!-- 1. The CSS Loader -->
             <div class="premium-loader"></div>
-            <!-- 2. The Center Icon (Sparkles) -->
-            <div style="position: absolute;">
-                <i data-lucide="sparkles" class="center-icon" style="width: 32px; height: 32px;"></i>
-            </div>
+            <div style="position: absolute;"><i data-lucide="sparkles" class="center-icon"
+                    style="width: 32px; height: 32px;"></i></div>
         </div>
-        <!-- LOADING TEXT (Thai) -->
         <h2 id="role-loading-text" class="text-2xl font-bold mt-6 animate-pulse"
-            style="font-family: 'Kanit', sans-serif; color: #D4AF37; letter-spacing: 1px;">
-            กำลังเปลี่ยนโหมด...
-        </h2>
+            style="font-family: 'Kanit', sans-serif; color: #D4AF37; letter-spacing: 1px;">กำลังเปลี่ยนโหมด...</h2>
         <p style="color: #9CA3AF; margin-top: 8px; font-family: 'Kanit', sans-serif;">เตรียมตัวออกผจญภัย...</p>
     </div>
 
-    <!-- ======================================================= -->
-    <!--                      SCRIPT LOADING                     -->
-    <!-- ======================================================= -->
+    <!-- Scripts -->
     <script type="module" src="js/main.js"></script>
     <script>lucide.createIcons();</script>
 </body>

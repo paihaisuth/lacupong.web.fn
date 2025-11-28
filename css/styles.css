@@ -1,6 +1,27 @@
 /* css/styles.css - Clean Up */
 @import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
 
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-3px); }
+    100% { transform: translateY(0px); }
+}
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Animation สำหรับเหรียญเด้ง */
+@keyframes coinPulseAnim {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+    50% { transform: scale(1.2); box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+}
+.coin-pulse {
+    animation: coinPulseAnim 0.6s ease-in-out;
+    background-color: #FEF9C3 !important; /* Yellow-100 */
+    border-color: #FACC15 !important;
+}
+
 /* Custom Map Marker Styling (สำคัญมาก: ทำให้ Marker ดูแพง) */
 .treasure-divicon {
     background: transparent;

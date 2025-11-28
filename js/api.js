@@ -97,44 +97,59 @@ export function trackReferrer() {
 }
 
 export async function logVisitorTimeSpent(durationSeconds) {
-    //console.log(`(API - jQuery) Logging ${durationSeconds}s for visitor...`);
+    // --- FIX: เพิ่มการตรวจสอบ ---
+    if (!durationSeconds || typeof durationSeconds !== 'number' || durationSeconds <= 0) return;
+    // -------------------------
+
     try {
         await $.ajax({
             url: `${BASE_URL}/api/visitors/log-time`,
-            method: 'PATCH', // หรือ PATCH ตามที่ backend กำหนด
+            method: 'PATCH',
             contentType: 'application/json',
             data: JSON.stringify({ durationSeconds })
         });
     } catch (error) {
-        console.error("API Error [logVisitorTimeSpent]:", error.statusText, error.responseText);
-        throw new Error(error.responseJSON?.message || 'Failed to log visitor time');
+        console.warn('Visitor log failed');
     }
 }
 
 // --- for logged-in users ---
 export async function logUserTimeSpent(durationSeconds) {
-    //console.log(`(API - jQuery) Logging ${durationSeconds}s for user...`);
     const token = localStorage.getItem('authToken');
-    if (!token) {
-        // ไม่ควรเกิดขึ้นถ้า isLoggedIn() ทำงานถูกต้อง แต่ป้องกันไว้
-        console.warn("No auth token found for logUserTimeSpent.");
-        return; 
+    if (!token) return;
+
+    // --- FIX: เพิ่มการตรวจสอบ ป้องกัน Error 400 ---
+    if (!durationSeconds || typeof durationSeconds !== 'number' || durationSeconds <= 0) {
+        return; // ไม่ส่ง request ถ้าไม่มีเวลา
     }
+    // -------------------------------------------
 
     try {
-        await $.ajax({
-            url: `${BASE_URL}/api/users/log-time`,
+        const response = await fetch(`${BASE_URL}/api/users/log-time`, {
             method: 'PATCH',
-            contentType: 'application/json',
             headers: {
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            data: JSON.stringify({ durationSeconds })
-            // ลบ async: false ออกไปได้เลย ไม่จำเป็นอีกต่อไป
+            body: JSON.stringify({ durationSeconds })
         });
+
+        if (!response.ok) return; // ข้ามถ้า Server ตอบ error
+
+        const data = await response.json();
+
+        if (window.gameService && window.gameService.handleTimeLogResponse) {
+            window.gameService.handleTimeLogResponse(data);
+        }
+
+        if (data.coinsEarned > 0 && window.gameService) {
+            window.gameService.updateCoinBalance(data.newBalance);
+            window.gameService.triggerCoinEffect(data.coinsEarned);
+        }
+
     } catch (error) {
-        console.error("API Error [logUserTimeSpent]:", error.statusText, error.responseText);
-        throw new Error(error.responseJSON?.message || 'Failed to log user time');
+        console.error("API Error [logUserTimeSpent]:", error); 
+        
     }
 }
 

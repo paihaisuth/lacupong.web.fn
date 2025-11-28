@@ -1,6 +1,7 @@
 // js/auth.js
 import * as api from './api.js';
 import * as ui from './uiManager.js';
+import { initGameService } from './gameService.js'; 
 
 const POLICY_LINK_URL = "#";
 
@@ -64,6 +65,8 @@ async function handleLogin(e, credentials = null) {
             if (!credentials) {
                 ui.showSuccessAlert('ยินดีต้อนรับ!', `สวัสดีคุณ ${state.currentUser.username}`);
             }
+
+            initGameService();
         }
     } catch (error) {
         console.error("Login failed:", error.message);
