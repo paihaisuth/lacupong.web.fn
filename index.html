@@ -68,10 +68,17 @@
 
         /* Modal Backdrop - No Blur for Performance */
         .modal .absolute.inset-0.bg-black\/40 {
+            /* ปิด Blur ถาวร */
             backdrop-filter: none !important;
-            /* ปิด Blur */
-            background-color: rgba(0, 0, 0, 0.5);
+            -webkit-backdrop-filter: none !important;
+            /* ใช้สีดำโปร่งแสงธรรมดา */
+            background-color: rgba(0, 0, 0, 0.6);
+            /* ใช้ GPU เร่งการแสดงผล */
+            will-change: opacity;
+            transition: opacity 0.2s ease-out;
         }
+
+        
 
         /* Tabs */
         .tab-active {

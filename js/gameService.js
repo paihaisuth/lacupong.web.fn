@@ -29,8 +29,18 @@ let currentGameData = {
     avatar: { skin: '#e0ac69', shirt: '#3b82f6' } // Removed hairIndex/hairColor
 };
 
+export function resetGameData() {
+    currentGameData = {
+        coins: 0,
+        avatar: { skin: '#e0ac69', shirt: '#3b82f6' } // Default Guest
+    };
+    // Clear temp storage
+    localStorage.removeItem('userGameData_temp');
+    updateGameUI();
+}
+
 // --- API CALLS ---
-async function fetchGameProfile() {
+export async function fetchGameProfile() {
     if (!auth.isLoggedIn()) return null;
     try {
         const response = await fetch(`${BASE_URL}/api/game/profile`, {

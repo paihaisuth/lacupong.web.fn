@@ -88,16 +88,20 @@ async function handleLogin(e, credentials = null) {
             
             localStorage.setItem('authToken', state.authToken);
             localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
-            
-            // Refresh UI State
+        
+
+            // 1. Refresh Auth UI
             updateUIforAuthState();
             
-            // Sync Map to show 'Mine' signs immediately
-            if(window.mapManager && window.mapManager.loadSigns) {
-                window.mapManager.loadSigns();
+            // 2. FETCH FRESH GAME DATA (Coins/Avatar)
+            if(window.gameService && window.gameService.fetchGameProfile) {
+                await window.gameService.fetchGameProfile(); // Wait for data
             }
-            if(window.mapManager && window.mapManager.refreshUserMarker) {
-                window.mapManager.refreshUserMarker();
+            
+            // 3. Sync Map Markers
+            if(window.mapManager) {
+                if(window.mapManager.loadSigns) window.mapManager.loadSigns();
+                if(window.mapManager.refreshUserMarker) window.mapManager.refreshUserMarker();
             }
             
             ui.hideAllModals(); 
@@ -160,19 +164,28 @@ function handleLogout() {
         buttonsStyling: false
     }).then((result) => {
         if (result.isConfirmed) {
+            // 1. Clear Auth State
             state.authToken = null;
             state.currentUser = null;
             localStorage.removeItem('authToken');
             localStorage.removeItem('currentUser');
             localStorage.removeItem('userGameData_temp');
 
-            updateUIforAuthState(); // This will now reset the top bar too
+            // 2. Reset Game Service Data (Force Guest State)
+            if(window.gameService && window.gameService.resetGameData) {
+                window.gameService.resetGameData(); 
+            }
 
-            document.getElementById('user-menu').classList.remove('opacity-100', 'visible', 'translate-y-0');
+            // 3. Update UI
+            updateUIforAuthState(); 
+            document.getElementById('user-menu').classList.remove('opacity-100', 'visible', 'translate-y-0'); 
+            
+            // 4. Force Map Marker Reset (Important!)
+            if(window.mapManager && window.mapManager.refreshUserMarker) {
+                window.mapManager.refreshUserMarker();
+            }
+
             ui.showSuccessAlert('ออกจากระบบแล้ว', 'ไว้เจอกันใหม่นะ!');
-
-            // Optional: Reload map to clear user specific markers or refresh view
-            // window.location.reload(); 
         }
     });
 }
