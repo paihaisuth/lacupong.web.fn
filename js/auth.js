@@ -1,14 +1,14 @@
 // js/auth.js
 import * as api from './api.js';
 import * as ui from './uiManager.js';
-import { initGameService } from './gameService.js'; 
+import { initGameService } from './gameService.js';
 
 const POLICY_LINK_URL = "#";
 
 let state = {
     authToken: null,
     currentUser: null,
-    registrationData: {} 
+    registrationData: {}
 };
 
 export const isLoggedIn = () => !!state.authToken;
@@ -16,23 +16,48 @@ export const isLoggedIn = () => !!state.authToken;
 function updateUIforAuthState() {
     const userBtn = document.getElementById('user-btn');
     const userInfoDisplay = document.getElementById('user-info-display');
-    const loginDot = document.getElementById('login-dot'); // เพิ่มจุดเขียวใน UI
+    const loginDot = document.getElementById('login-dot');
+
+    // UI Elements for Top Bar
+    const topNameDisplay = document.getElementById('user-info-display-top');
+    const topAvatarDisplay = document.getElementById('top-avatar-display');
 
     if (state.authToken && state.currentUser) {
-        userBtn.classList.add('text-gold-600', 'bg-gold-50'); // Tailwind Styling
+        // --- LOGGED IN STATE ---
+        userBtn.classList.add('text-gold-600', 'bg-gold-50');
         userInfoDisplay.innerHTML = `<span class="text-sm text-gray-500">สวัสดี</span><br><span class="text-lg text-gold-600 font-bold">${state.currentUser.username}</span>`;
-        if(loginDot) loginDot.style.display = 'block';
+        if (loginDot) loginDot.style.display = 'block';
+
+        // Update Top Bar Name
+        if (topNameDisplay) topNameDisplay.innerText = state.currentUser.username;
+
+        // Update Top Bar Avatar (Fetch from LocalStorage temp data or default)
+        if (topAvatarDisplay && window.gameService) {
+            const gameData = JSON.parse(localStorage.getItem('userGameData_temp')) || { avatar: { skin: '#e0ac69', shirt: '#3b82f6' } };
+            topAvatarDisplay.innerHTML = window.gameService.generateAvatarSVG(gameData.avatar);
+        }
+
     } else {
+        // --- LOGGED OUT / GUEST STATE ---
         userBtn.classList.remove('text-gold-600', 'bg-gold-50');
         userInfoDisplay.textContent = '';
-        if(loginDot) loginDot.style.display = 'none';
+        if (loginDot) loginDot.style.display = 'none';
+
+        // Reset Top Bar to Guest
+        if (topNameDisplay) topNameDisplay.innerText = 'Guest';
+        if (topAvatarDisplay) {
+            // Default Guest Icon
+            topAvatarDisplay.innerHTML = '<i data-lucide="user" class="text-gray-400 w-5 h-5"></i>';
+        }
     }
-    lucide.createIcons();
+
+    // Refresh Icons
+    if (window.lucide) lucide.createIcons();
 }
 
 async function handleLogin(e, credentials = null) {
     if (e) e.preventDefault();
-    
+
     const loginBtn = document.getElementById('login-submit-btn');
     const originalBtnContent = loginBtn.innerHTML;
     let username, password;
@@ -45,7 +70,7 @@ async function handleLogin(e, credentials = null) {
         password = document.getElementById('login-password').value;
     }
 
-    if (!credentials) { 
+    if (!credentials) {
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<div class="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mx-auto"></div>';
     }
@@ -58,9 +83,9 @@ async function handleLogin(e, credentials = null) {
             localStorage.setItem('authToken', state.authToken);
             localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
             updateUIforAuthState();
-            
-            ui.hideAllModals(); 
-            
+
+            ui.hideAllModals();
+
             // Welcome Alert
             if (!credentials) {
                 ui.showSuccessAlert('ยินดีต้อนรับ!', `สวัสดีคุณ ${state.currentUser.username}`);
@@ -91,13 +116,13 @@ async function handleRegister(e) {
 
     try {
         const response = await api.registerUser(state.registrationData);
-        if(response.success) {
+        if (response.success) {
             // Success & Auto Login
             await ui.showSuccessAlert('สมัครสมาชิกสำเร็จ!', 'กำลังเข้าสู่ระบบอัตโนมัติ...');
-            
-            await handleLogin(null, { 
-                username: state.registrationData.username, 
-                password: state.registrationData.password 
+
+            await handleLogin(null, {
+                username: state.registrationData.username,
+                password: state.registrationData.password
             });
         }
     } catch (error) {
@@ -126,9 +151,15 @@ function handleLogout() {
             state.currentUser = null;
             localStorage.removeItem('authToken');
             localStorage.removeItem('currentUser');
-            updateUIforAuthState();
-            document.getElementById('user-menu').classList.remove('opacity-100', 'visible', 'translate-y-0'); // Hide Menu
+            localStorage.removeItem('userGameData_temp');
+
+            updateUIforAuthState(); // This will now reset the top bar too
+
+            document.getElementById('user-menu').classList.remove('opacity-100', 'visible', 'translate-y-0');
             ui.showSuccessAlert('ออกจากระบบแล้ว', 'ไว้เจอกันใหม่นะ!');
+
+            // Optional: Reload map to clear user specific markers or refresh view
+            // window.location.reload(); 
         }
     });
 }
@@ -164,11 +195,11 @@ function handleRegistrationStep() {
             return;
         }
 
-        if(!username || !password) {
+        if (!username || !password) {
             ui.showInfoAlert('ข้อมูลไม่ครบ', 'กรุณากรอกข้อมูลบัญชีให้ครบถ้วน');
             return;
         }
-        
+
         state.registrationData = { username, email, password };
         navigateToStep(2);
     } else if (currentStep === 2) {
@@ -196,7 +227,7 @@ function navigateToStep(stepNumber) {
     if (targetProgress) {
         targetProgress.classList.add('active');
         // เปลี่ยนสีตัวเลขและเส้น (Tailwind Logic)
-        if(stepNumber === 1) {
+        if (stepNumber === 1) {
             // Reset styles for step 1 active
         }
     }
@@ -240,15 +271,15 @@ export function setupAuthEventListeners() {
         const email = document.getElementById('forgot-email').value;
         const sendBtn = document.getElementById('send-reset-link-btn');
         const originalText = sendBtn.textContent;
-        
+
         sendBtn.disabled = true;
         sendBtn.textContent = 'กำลังส่ง...';
-        
+
         try {
             const response = await api.requestPasswordReset(email);
             ui.showSuccessAlert('ส่งลิงก์แล้ว', response.message);
             ui.hideModal('forgot-password-modal');
-            document.getElementById('forgot-email').value = ''; 
+            document.getElementById('forgot-email').value = '';
         } catch (error) {
             ui.showErrorAlert(error.message);
         } finally {
@@ -273,12 +304,12 @@ export function setupAuthEventListeners() {
         e.stopPropagation(); // Prevent immediate close
         if (isLoggedIn()) {
             // Toggle Logic for Tailwind Classes
-            if(userMenu.classList.contains('opacity-0')) {
-                 userMenu.classList.remove('opacity-0', 'invisible', 'translate-y-4');
-                 userMenu.classList.add('opacity-100', 'visible', 'translate-y-0');
+            if (userMenu.classList.contains('opacity-0')) {
+                userMenu.classList.remove('opacity-0', 'invisible', 'translate-y-4');
+                userMenu.classList.add('opacity-100', 'visible', 'translate-y-0');
             } else {
-                 userMenu.classList.add('opacity-0', 'invisible', 'translate-y-4');
-                 userMenu.classList.remove('opacity-100', 'visible', 'translate-y-0');
+                userMenu.classList.add('opacity-0', 'invisible', 'translate-y-4');
+                userMenu.classList.remove('opacity-100', 'visible', 'translate-y-0');
             }
         } else {
             ui.showModal('login-modal');

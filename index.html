@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Golden Ticket - Premium Hunt</title>
+    <title>นักล่าคูปอง</title>
 
     <!-- 1. Tailwind CSS -->
     <link href="css/output.css" rel="stylesheet">
@@ -39,10 +39,14 @@
             font-family: 'Kanit', sans-serif;
             background-color: #fdfdfd;
             overflow: hidden;
+            /* ป้องกันการเด้งของหน้าจอเวลาลากบนมือถือ */
+            overscroll-behavior: none;
         }
 
-        .leaflet-layer {
-            filter: sepia(0.2) contrast(0.95) saturate(0.8);
+        /* MAP PERFORMANCE */
+        .leaflet-marker-icon {
+            /* ใช้ Hardware Acceleration */
+            transform: translate3d(0, 0, 0);
         }
 
         .no-scrollbar::-webkit-scrollbar {
@@ -54,30 +58,32 @@
             scrollbar-width: none;
         }
 
-        /* Glass Effect for Panels */
+        /* PERFORMANCE FRIENDLY PANELS */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(229, 231, 235, 1);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            /* เปลี่ยนจาก Blur เป็นสีพื้น Solid + Transparency เล็กน้อย */
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Modal Backdrop - No Blur for Performance */
+        .modal .absolute.inset-0.bg-black\/40 {
+            backdrop-filter: none !important;
+            /* ปิด Blur */
+            background-color: rgba(0, 0, 0, 0.5);
         }
 
         /* Tabs */
         .tab-active {
             background-color: #FBBF24;
-            /* Amber-400 */
             color: white;
             border-color: #FBBF24;
         }
 
         .tab-inactive {
             background-color: #F9FAFB;
-            /* Gray-50 */
             color: #6B7280;
-            /* Gray-500 */
             border-color: #E5E7EB;
-            /* Gray-200 */
         }
     </style>
 </head>
@@ -98,7 +104,7 @@
                 <div class="absolute inset-0 border-4 border-gold-400 rounded-full border-t-transparent animate-spin">
                 </div>
             </div>
-            <p class="mt-4 text-gold-600 font-medium animate-pulse">กำลังค้นหาพิกัดสมบัติ...</p>
+            <p class="mt-4 text-gold-600 font-medium">กำลังค้นหาพิกัดสมบัติ...</p>
         </div>
     </div>
 
@@ -110,7 +116,7 @@
 
             <!-- 1. Daily Reward Button -->
             <button id="daily-reward-btn"
-                class="pointer-events-auto bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-green-600 transition-colors animate-pulse border-2 border-white ring-1 ring-green-200">
+                class="pointer-events-auto bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-green-600 transition-colors border-2 border-white ring-1 ring-green-200">
                 <i data-lucide="gift" class="w-5 h-5"></i>
             </button>
 
@@ -162,11 +168,16 @@
                     class="absolute left-1 top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-br from-gold-400 to-gold-600 rounded-full shadow-md transition-all duration-300 z-0">
                 </div>
                 <button id="placer-btn"
-                    class="role-option relative z-10 w-1/2 text-sm font-semibold transition-colors duration-300 text-white"
-                    data-role="placer">วางคูปอง</button>
+                    class="role-option relative z-10 w-1/2 flex items-center justify-center transition-colors duration-300 text-white"
+                    data-role="placer">
+                    <i data-lucide="map-pin" class="w-5 h-5"></i>
+                </button>
+
                 <button id="hunter-btn"
-                    class="role-option relative z-10 w-1/2 text-sm font-medium transition-colors duration-300 text-gray-500 hover:text-gray-700"
-                    data-role="hunter">หาคูปอง</button>
+                    class="role-option relative z-10 w-1/2 flex items-center justify-center transition-colors duration-300 text-gray-400 hover:text-gray-600"
+                    data-role="hunter">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </button>
             </div>
 
             <!-- Bottom Right Group -->
@@ -253,11 +264,28 @@
                     class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
                 <textarea id="mission" rows="2" placeholder="ภารกิจ (เช่น ถ่ายรูปหน้าร้าน)"
                     class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none"></textarea>
-                <div class="flex gap-3">
-                    <input type="number" id="discount" placeholder="% ส่วนลด"
-                        class="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
-                    <input type="number" id="discount-baht" placeholder="฿ ส่วนลด"
-                        class="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none">
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Input เปอร์เซ็นต์ (%) -->
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-400 font-bold text-sm">%</span>
+                        </div>
+                        <input type="number" id="discount" placeholder="ส่วนลด" min="0" max="100"
+                            oninput="if(this.value.length > 3) this.value = this.value.slice(0,3); this.value = !!this.value && Math.abs(this.value) >= 0 ? Math.abs(this.value) : null"
+                            onpaste="return false"
+                            class="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none transition-all font-medium text-gray-700 placeholder-gray-400">
+                    </div>
+
+                    <!-- Input บาท (฿) -->
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-400 font-bold text-sm">฿</span>
+                        </div>
+                        <input type="number" id="discount-baht" placeholder="ส่วนลด" min="0"
+                            oninput="if(this.value.length > 10) this.value = this.value.slice(0,10); this.value = !!this.value && Math.abs(this.value) >= 0 ? Math.abs(this.value) : null"
+                            onpaste="return false"
+                            class="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none transition-all font-medium text-gray-700 placeholder-gray-400">
+                    </div>
                 </div>
                 <input type="number" id="total-boxes" value="1" min="1"
                     class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gold-400 outline-none"
@@ -270,21 +298,91 @@
 
             <!-- TAB 2: SIGN -->
             <div id="tab-sign" class="space-y-4 hidden animate-fadeIn">
-                <div
-                    class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800 flex gap-3 items-start">
-                    <i data-lucide="info" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
-                    <div>
-                        <p class="font-bold">พื้นที่พูดคุย</p>
-                        <p class="text-xs opacity-75">ใช้สำหรับทักทาย หรือแจ้งข่าวสาร (หายใน 24 ชม.)</p>
+
+                <!-- 1. Sign Type Selector -->
+                <div class="flex bg-gray-100 p-1 rounded-lg">
+                    <button onclick="switchSignType('normal')" id="type-btn-normal"
+                        class="flex-1 py-1.5 text-xs font-bold rounded-md bg-white text-blue-600 shadow-sm transition-all">
+                        ข้อความ
+                    </button>
+                    <button onclick="switchSignType('vote')" id="type-btn-vote"
+                        class="flex-1 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-700 transition-all">
+                        โหวต
+                    </button>
+                    <button onclick="switchSignType('poll')" id="type-btn-poll"
+                        class="flex-1 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-700 transition-all">
+                        โพล
+                    </button>
+                </div>
+
+                <!-- 2. Time Selector (24h/48h/72h) -->
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <i data-lucide="clock" class="w-4 h-4"></i>
+                    <span class="text-xs font-bold">อยู่ได้นาน:</span>
+                    <select id="sign-duration"
+                        class="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold outline-none focus:border-blue-500">
+                        <option value="24">24 ชั่วโมง</option>
+                        <option value="48">48 ชั่วโมง</option>
+                        <option value="72">72 ชั่วโมง</option>
+                    </select>
+                </div>
+
+                <!-- FORM A: NORMAL SIGN -->
+                <div id="form-normal" class="space-y-4">
+                    <div
+                        class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-xs text-blue-800 flex gap-2 items-start">
+                        <i data-lucide="info" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <p class="font-bold">พื้นที่พูดคุย</p>
+                            <p class="opacity-75">ทักทาย หรือแจ้งข่าวสาร</p>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="sign-message" maxlength="16" placeholder="ข้อความสั้นๆ..."
+                            class="w-full px-4 py-4 bg-white border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 outline-none font-bold text-center text-xl text-gray-800 placeholder-gray-300">
+                        <div class="absolute right-3 top-5 text-[10px] text-gray-400 font-mono">MAX 16</div>
                     </div>
                 </div>
 
-                <div class="relative">
-                    <input type="text" id="sign-message" maxlength="16" placeholder="ข้อความสั้นๆ..."
-                        class="w-full px-4 py-4 bg-white border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 outline-none font-bold text-center text-xl text-gray-800 placeholder-gray-300">
-                    <div class="absolute right-3 top-5 text-[10px] text-gray-400 font-mono">MAX 16</div>
+                <!-- FORM B: VOTE (Strict 2-3 Options) -->
+                <div id="form-vote" class="space-y-3 hidden">
+                    <input type="text" id="vote-title" maxlength="32" placeholder="หัวข้อโหวต (เช่น เย็นนี้กินไร?)"
+                        class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 outline-none font-bold text-sm">
+
+                    <textarea id="vote-desc" rows="2" maxlength="258" placeholder="รายละเอียดเพิ่มเติม..."
+                        class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 outline-none text-xs"></textarea>
+
+                    <div class="space-y-2">
+                        <p class="text-xs font-bold text-gray-500">ตัวเลือก (2-3 ข้อ)</p>
+                        <input type="text" class="vote-opt w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            placeholder="ตัวเลือกที่ 1 (Required)" required>
+                        <input type="text" class="vote-opt w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            placeholder="ตัวเลือกที่ 2 (Required)" required>
+                        <input type="text" class="vote-opt w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            placeholder="ตัวเลือกที่ 3 (Optional)">
+                    </div>
                 </div>
 
+                <!-- FORM C: POLL (Max 10 Options) -->
+                <div id="form-poll" class="space-y-3 hidden">
+                    <input type="text" id="poll-title" maxlength="32" placeholder="คำถามโพล..."
+                        class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:border-purple-500 outline-none font-bold text-sm">
+
+                    <div id="poll-options-container" class="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
+                        <!-- Dynamic Inputs go here -->
+                        <input type="text" class="poll-opt w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            placeholder="ตัวเลือก 1">
+                        <input type="text" class="poll-opt w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                            placeholder="ตัวเลือก 2">
+                    </div>
+
+                    <button type="button" onclick="addPollOption()"
+                        class="w-full py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded-lg text-xs font-bold hover:bg-gray-50 transition-colors">
+                        + เพิ่มตัวเลือก
+                    </button>
+                </div>
+
+                <!-- SUBMIT BUTTON -->
                 <button onclick="import('./js/mapManager.js').then(m => m.placeSign())"
                     class="w-full py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-400/30 active:scale-95 transition-all">
                     ปักป้ายเลย
@@ -300,23 +398,32 @@
     <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
         id="view-sign-modal">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"></div>
+
         <div
-            class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[450px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
-            <div class="flex justify-between items-center mb-4">
+            class="modal-content bg-white w-full rounded-t-3xl shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[450px] sm:rounded-3xl sm:translate-y-10 sm:scale-95 max-h-[85vh] flex flex-col p-0">
+
+            <!-- 1. Header (Fixed) -->
+            <div class="flex justify-between items-center p-5 border-b border-gray-100 flex-shrink-0">
                 <h3 class="text-lg font-bold text-gray-800">ป้ายประกาศ</h3>
-                <button class="close-btn text-gray-400 hover:text-gray-800"><i data-lucide="x"></i></button>
+                <button class="close-btn text-gray-400 hover:text-gray-800 p-1 bg-gray-50 rounded-full"><i
+                        data-lucide="x" class="w-5 h-5"></i></button>
             </div>
 
-            <!-- Dynamic Content Injected by JS -->
-            <div id="view-sign-content"></div>
+            <!-- 2. Content (Scrollable Area) - JS injects here -->
+            <div id="view-sign-content" class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-4">
+                <!-- Content will be injected here -->
+            </div>
 
-            <div class="flex gap-2 mt-4 border-t pt-3">
-                <input type="text" id="comment-input" placeholder="พิมพ์คอมเมนต์..."
-                    class="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-full focus:border-blue-400 outline-none text-sm">
-                <button id="send-comment-btn"
-                    class="bg-blue-500 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-600 transition shadow-md">
-                    <i data-lucide="send" class="w-4 h-4 ml-0.5"></i>
-                </button>
+            <!-- 3. Footer / Input (Fixed) - Permanent -->
+            <div class="p-3 border-t border-gray-100 bg-white flex-shrink-0 rounded-b-3xl">
+                <div class="flex gap-2">
+                    <input type="text" id="comment-input" placeholder="พิมพ์คอมเมนต์..."
+                        class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-400 outline-none text-sm transition-all">
+                    <button id="send-comment-btn"
+                        class="bg-blue-500 text-white w-11 h-11 rounded-xl flex items-center justify-center hover:bg-blue-600 transition shadow-md shadow-blue-200 active:scale-95">
+                        <i data-lucide="send" class="w-5 h-5 ml-0.5"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -380,38 +487,54 @@
         </div>
     </div>
 
-<!-- ======================================================= -->
+    <!-- ======================================================= -->
     <!--             MODAL: AVATAR CUSTOMIZATION (V2)            -->
     <!-- ======================================================= -->
-    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center" id="modal-avatar-editor">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" onclick="this.parentElement.classList.remove('show')"></div>
-        <div class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[400px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
+    <div class="modal fixed inset-0 z-[60] flex items-end justify-center pointer-events-none sm:items-center"
+        id="modal-avatar-editor">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"
+            onclick="this.parentElement.classList.remove('show')"></div>
+        <div
+            class="modal-content bg-white w-full rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[400px] sm:rounded-3xl sm:translate-y-10 sm:scale-95">
             <div class="relative">
-                <button class="close-btn absolute top-0 right-0 text-gray-400 hover:text-red-500 transition-colors" onclick="this.closest('.modal').classList.remove('show')"><i data-lucide="x"></i></button>
+                <button class="close-btn absolute top-0 right-0 text-gray-400 hover:text-red-500 transition-colors"
+                    onclick="this.closest('.modal').classList.remove('show')"><i data-lucide="x"></i></button>
                 <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">แต่งตัวละคร</h2>
-                
+
                 <!-- Preview -->
                 <div class="flex justify-center mb-6">
-                    <div id="avatar-editor-preview" class="w-40 h-40 bg-gray-50 rounded-full border-4 border-yellow-400 shadow-xl overflow-hidden relative"></div>
+                    <div id="avatar-editor-preview"
+                        class="w-40 h-40 bg-gray-50 rounded-full border-4 border-yellow-400 shadow-xl overflow-hidden relative">
+                    </div>
                 </div>
 
                 <!-- Customization Sections -->
                 <div class="space-y-5 pr-2 max-h-[40vh] overflow-y-auto custom-scrollbar">
-                    
+
                     <!-- 1. SKIN COLOR -->
                     <div>
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-xs text-gray-500 font-bold uppercase tracking-wider">สีผิว</span>
-                            <button onclick="window.gameService.openShopModal()" class="text-[10px] text-blue-500 font-bold hover:underline flex items-center gap-1">
+                            <button onclick="window.gameService.openShopModal()"
+                                class="text-[10px] text-blue-500 font-bold hover:underline flex items-center gap-1">
                                 <i data-lucide="shopping-bag" class="w-3 h-3"></i> ไปร้านค้า
                             </button>
                         </div>
-                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-wrap gap-3 justify-center" id="editor-skin-options">
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-wrap gap-3 justify-center"
+                            id="editor-skin-options">
                             <!-- Basic Skins -->
-                            <button style="background-color: #fca;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200" onclick="window.gameService.setAvatarProp('skin', '#fca')"></button>
-                            <button style="background-color: #e0ac69;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200" onclick="window.gameService.setAvatarProp('skin', '#e0ac69')"></button>
-                            <button style="background-color: #8d5524;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200" onclick="window.gameService.setAvatarProp('skin', '#8d5524')"></button>
-                            <button style="background-color: #5c3a1e;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200" onclick="window.gameService.setAvatarProp('skin', '#5c3a1e')"></button>
+                            <button style="background-color: #fca;"
+                                class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200"
+                                onclick="window.gameService.setAvatarProp('skin', '#fca')"></button>
+                            <button style="background-color: #e0ac69;"
+                                class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200"
+                                onclick="window.gameService.setAvatarProp('skin', '#e0ac69')"></button>
+                            <button style="background-color: #8d5524;"
+                                class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200"
+                                onclick="window.gameService.setAvatarProp('skin', '#8d5524')"></button>
+                            <button style="background-color: #5c3a1e;"
+                                class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition ring-1 ring-gray-200"
+                                onclick="window.gameService.setAvatarProp('skin', '#5c3a1e')"></button>
                             <!-- Premium Skins (Dynamic JS will append here if owned) -->
                         </div>
                     </div>
@@ -419,37 +542,53 @@
                     <!-- 2. SHIRT COLOR -->
                     <div>
                         <span class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2 block">สีเสื้อ</span>
-                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-wrap gap-3 justify-center" id="editor-shirt-options">
-                            <button style="background-color: #ef4444;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition" onclick="window.gameService.setAvatarProp('shirt', '#ef4444')"></button>
-                            <button style="background-color: #3b82f6;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition" onclick="window.gameService.setAvatarProp('shirt', '#3b82f6')"></button>
-                            <button style="background-color: #22c55e;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition" onclick="window.gameService.setAvatarProp('shirt', '#22c55e')"></button>
-                            <button style="background-color: #a855f7;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition" onclick="window.gameService.setAvatarProp('shirt', '#a855f7')"></button>
-                            <button style="background-color: #1f2937;" class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition" onclick="window.gameService.setAvatarProp('shirt', '#1f2937')"></button>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-wrap gap-3 justify-center"
+                            id="editor-shirt-options">
+                            <button style="background-color: #ef4444;"
+                                class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition"
+                                onclick="window.gameService.setAvatarProp('shirt', '#ef4444')"></button>
+                            <button style="background-color: #3b82f6;"
+                                class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition"
+                                onclick="window.gameService.setAvatarProp('shirt', '#3b82f6')"></button>
+                            <button style="background-color: #22c55e;"
+                                class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition"
+                                onclick="window.gameService.setAvatarProp('shirt', '#22c55e')"></button>
+                            <button style="background-color: #a855f7;"
+                                class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition"
+                                onclick="window.gameService.setAvatarProp('shirt', '#a855f7')"></button>
+                            <button style="background-color: #1f2937;"
+                                class="w-8 h-8 rounded-full border-2 border-white shadow-md hover:scale-110 transition"
+                                onclick="window.gameService.setAvatarProp('shirt', '#1f2937')"></button>
                         </div>
                     </div>
 
                 </div>
 
-                <button id="save-avatar-btn" class="w-full mt-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-bold text-lg shadow-lg active:scale-95 transition transform">
+                <button id="save-avatar-btn"
+                    class="w-full mt-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-bold text-lg shadow-lg active:scale-95 transition transform">
                     บันทึกการแต่งตัว
                 </button>
             </div>
         </div>
     </div>
 
-<!-- ======================================================= -->
+    <!-- ======================================================= -->
     <!--                 MODAL: ITEM SHOP (UPDATED)              -->
     <!-- ======================================================= -->
-    <div class="modal fixed inset-0 z-[70] flex items-end justify-center pointer-events-none sm:items-center" id="shop-modal">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0" onclick="this.parentElement.classList.remove('show')"></div>
-        
+    <div class="modal fixed inset-0 z-[70] flex items-end justify-center pointer-events-none sm:items-center"
+        id="shop-modal">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity opacity-0"
+            onclick="this.parentElement.classList.remove('show')"></div>
+
         <!-- FIX: เพิ่ม max-h-[80vh] และ flex flex-col เพื่อให้ scroll ได้ถ้าจอเล็ก -->
-        <div class="modal-content bg-gray-50 w-full rounded-t-3xl p-5 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[420px] sm:rounded-3xl sm:translate-y-10 sm:scale-95 max-h-[80vh] flex flex-col">
-            
+        <div
+            class="modal-content bg-gray-50 w-full rounded-t-3xl p-5 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto sm:w-[420px] sm:rounded-3xl sm:translate-y-10 sm:scale-95 max-h-[80vh] flex flex-col">
+
             <!-- Header (Fixed) -->
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 shadow-inner">
+                    <div
+                        class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 shadow-inner">
                         <i data-lucide="store" class="w-5 h-5"></i>
                     </div>
                     <div>
@@ -457,11 +596,14 @@
                         <p id="coin-rate-text" class="text-[10px] text-gray-500">ออนไลน์ครบ 1 นาที รับฟรี 5 เหรียญ!</p>
                     </div>
                 </div>
-                <button class="close-btn p-1.5 bg-white rounded-full shadow-sm text-gray-400 hover:text-gray-800" onclick="document.getElementById('shop-modal').classList.remove('show')"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button class="close-btn p-1.5 bg-white rounded-full shadow-sm text-gray-400 hover:text-gray-800"
+                    onclick="document.getElementById('shop-modal').classList.remove('show')"><i data-lucide="x"
+                        class="w-5 h-5"></i></button>
             </div>
 
             <!-- Coin Balance (Fixed) -->
-            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center mb-3 flex-shrink-0">
+            <div
+                class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center mb-3 flex-shrink-0">
                 <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">เหรียญของคุณ</span>
                 <div class="flex items-center gap-1.5 bg-yellow-50 px-3 py-1 rounded-lg border border-yellow-100">
                     <i data-lucide="coins" class="w-3.5 h-3.5 text-yellow-500"></i>
@@ -471,10 +613,13 @@
 
             <!-- Items Grid (Scrollable) -->
             <!-- FIX: overflow-y-auto ที่นี่ เพื่อให้เลื่อนเฉพาะสินค้า -->
-            <div id="shop-items-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
+            <div id="shop-items-grid"
+                class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto custom-scrollbar pr-1 pb-4">
                 <!-- JS Will Inject Items Here -->
                 <div class="col-span-full text-center py-8 text-gray-400">
-                    <div class="animate-spin w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full mx-auto mb-2"></div>
+                    <div
+                        class="animate-spin w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full mx-auto mb-2">
+                    </div>
                     <span class="text-xs">กำลังโหลดสินค้า...</span>
                 </div>
             </div>
@@ -883,7 +1028,7 @@
             <div style="position: absolute;"><i data-lucide="sparkles" class="center-icon"
                     style="width: 32px; height: 32px;"></i></div>
         </div>
-        <h2 id="role-loading-text" class="text-2xl font-bold mt-6 animate-pulse"
+        <h2 id="role-loading-text" class="text-2xl font-bold mt-6"
             style="font-family: 'Kanit', sans-serif; color: #D4AF37; letter-spacing: 1px;">กำลังเปลี่ยนโหมด...</h2>
         <p style="color: #9CA3AF; margin-top: 8px; font-family: 'Kanit', sans-serif;">เตรียมตัวออกผจญภัย...</p>
     </div>

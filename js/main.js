@@ -7,55 +7,70 @@ import { hideModal, showModal, switchRole } from './uiManager.js';
 import { initTimeTracker } from './timeTracker.js';
 import { setupApiInterceptor } from './apiInterceptor.js';
 import * as gameService from './gameService.js';
-import { setUserMarkerScale, getUserMarkerScale } from './mapManager.js';
+import { updateMarkerIconContentScaling } from './mapManager.js';
 
-const scaleSlider = document.getElementById('marker-scale-slider');
-const scaleDisplay = document.getElementById('scale-value-display');
 const previewMarker = document.getElementById('preview-marker');
 
-if (scaleSlider) {
-    // 1. Set Initial Value from Storage
-    const currentScale = getUserMarkerScale();
-    scaleSlider.value = currentScale;
-    scaleDisplay.innerText = `${Math.round(currentScale * 100)}%`;
-    if (previewMarker) previewMarker.style.transform = `scale(${currentScale})`;
-
-    // 2. Listen for Input (Real-time preview)
-    scaleSlider.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-
-        // Update Text
-        scaleDisplay.innerText = `${Math.round(val * 100)}%`;
-
-        // Update Preview Box
-        if (previewMarker) previewMarker.style.transform = `scale(${val})`;
-
-        // Update Map Immediately
-        setUserMarkerScale(val);
+window.switchSignType = function(type) {
+    // 1. Reset Buttons
+    ['normal', 'vote', 'poll'].forEach(t => {
+        const btn = document.getElementById(`type-btn-${t}`);
+        const form = document.getElementById(`form-${t}`);
+        
+        if (t === type) {
+            // Active Style
+            btn.className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-white text-blue-600 shadow-sm transition-all";
+            form.classList.remove('hidden');
+        } else {
+            // Inactive Style
+            btn.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:text-gray-700 transition-all";
+            form.classList.add('hidden');
+        }
     });
-}
 
-window.switchPlaceTab = function(tab) {
+    // Store current type in a global variable or data attribute for mapManager to read
+    document.getElementById('place-treasure-modal').dataset.signType = type;
+};
+
+// --- NEW FUNCTION: Add Poll Option ---
+window.addPollOption = function() {
+    const container = document.getElementById('poll-options-container');
+    const count = container.querySelectorAll('input').length;
+    
+    if (count >= 10) {
+        // Optional: Show max limit alert
+        return; 
+    }
+
+    const input = document.createElement('input');
+    input.type = "text";
+    input.className = "poll-opt w-full px-3 py-2 border border-gray-200 rounded-lg text-sm animate-fadeIn";
+    input.placeholder = `ตัวเลือก ${count + 1}`;
+    
+    container.appendChild(input);
+};
+
+window.switchPlaceTab = function (tab) {
     // 1. Hide both contents
     const tabCoupon = document.getElementById('tab-coupon');
     const tabSign = document.getElementById('tab-sign');
-    if(tabCoupon) tabCoupon.classList.add('hidden');
-    if(tabSign) tabSign.classList.add('hidden');
-    
+    if (tabCoupon) tabCoupon.classList.add('hidden');
+    if (tabSign) tabSign.classList.add('hidden');
+
     // 2. Reset Buttons
     const btnCoupon = document.getElementById('btn-tab-coupon');
     const btnSign = document.getElementById('btn-tab-sign');
-    
-    if(btnCoupon) btnCoupon.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500 hover:text-gray-700";
-    if(btnSign) btnSign.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500 hover:text-gray-700";
+
+    if (btnCoupon) btnCoupon.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500 hover:text-gray-700";
+    if (btnSign) btnSign.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500 hover:text-gray-700";
 
     // 3. Activate Selected
     if (tab === 'coupon') {
-        if(tabCoupon) tabCoupon.classList.remove('hidden');
-        if(btnCoupon) btnCoupon.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-gold-600 border border-gray-100";
+        if (tabCoupon) tabCoupon.classList.remove('hidden');
+        if (btnCoupon) btnCoupon.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-gold-600 border border-gray-100";
     } else {
-        if(tabSign) tabSign.classList.remove('hidden');
-        if(btnSign) btnSign.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600 border border-gray-100";
+        if (tabSign) tabSign.classList.remove('hidden');
+        if (btnSign) btnSign.className = "flex-1 py-2 text-sm font-bold rounded-lg transition-all shadow-sm bg-white text-blue-600 border border-gray-100";
     }
 };
 
@@ -284,6 +299,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const userBtn = document.getElementById('user-btn');
     // Remove old listener if you want to replace behavior, or add logic inside auth.js
     // Ideally, update auth.js to handle opening the editor
+
+    const scaleSlider = document.getElementById('marker-scale-slider');
+    const scaleDisplay = document.getElementById('scale-value-display');
+
+    if (scaleSlider && scaleDisplay) {
+        // 1. Load saved value on startup
+        const savedScale = localStorage.getItem('gt_map_scale') || "1.0";
+        scaleSlider.value = savedScale;
+        scaleDisplay.textContent = Math.round(savedScale * 100) + "%";
+
+        // 2. Listen for changes
+        scaleSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+
+            // Update Text
+            scaleDisplay.textContent = Math.round(val * 100) + "%";
+
+            // Save to Storage
+            localStorage.setItem('gt_map_scale', val);
+
+            // 3. FORCE MAP UPDATE IMMEDIATELY
+            // This makes it work "live" without needing to zoom the map
+            updateMarkerIconContentScaling();
+
+            // Optional: Update the "Preview Marker" in the modal
+            const previewMarker = document.getElementById('preview-marker');
+            if (previewMarker) {
+                previewMarker.style.transform = `scale(${val})`;
+            }
+        });
+    }
+
+    // Set default sign type
+    if(document.getElementById('type-btn-normal')) {
+        switchSignType('normal');
+    }
 
     // Quick Fix for Customization Trigger:
     // Add a button inside your existing User Menu (auth.js logic) or add a separate button.

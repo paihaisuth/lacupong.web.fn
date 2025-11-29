@@ -82,20 +82,49 @@ export async function claimDailyReward() {
 
 // --- NEW: SIGN API CALLS ---
 export async function postSign(data) {
-    if (!auth.isLoggedIn()) return ui.showModal('login-modal');
-    try {
-        const response = await fetch(`${BASE_URL}/api/signs`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.message);
-        return result;
-    } catch (e) { throw e; }
+    const token = localStorage.getItem('authToken');
+    const response = await fetch(`${BASE_URL}/api/signs`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+    });
+    return await response.json();
+}
+
+export async function voteSign(signId, optionIndex) {
+    const token = localStorage.getItem('authToken');
+    const response = await fetch(`${BASE_URL}/api/signs/${signId}/vote`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ optionIndex })
+    });
+    return await response.json();
+}
+
+// Get Sign Details (for Avatars/Privacy)
+export async function getSignDetails(signId, skip = 0, limit = 10) {
+    const response = await fetch(`${BASE_URL}/api/signs/${signId}/details?commentSkip=${skip}&commentLimit=${limit}`);
+    return await response.json();
+}
+
+// NEW: Add Option to Poll
+export async function addSignOption(signId, newOption) {
+    const token = localStorage.getItem('authToken');
+    const response = await fetch(`${BASE_URL}/api/signs/${signId}/options`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ newOption })
+    });
+    return await response.json();
 }
 
 export async function postComment(signId, text) {
@@ -360,36 +389,93 @@ export async function equipItem(itemId, type, value) {
     }
 }
 
+// FILE: js/gameService.js
+
 export async function buyItem(itemId) {
-    if (!confirm('ยืนยันการซื้อสินค้านี้?')) return;
+    const buyBtn = document.getElementById(`buy-btn-${itemId}`);
+    const originalText = buyBtn ? buyBtn.innerHTML : '';
+    
+    if (buyBtn) {
+        buyBtn.innerHTML = '<div class="animate-spin w-4 h-4 border-2 border-yellow-900 border-t-transparent rounded-full mx-auto"></div>';
+        buyBtn.disabled = true;
+    }
 
     try {
+        const token = localStorage.getItem('authToken');
         const response = await fetch(`${BASE_URL}/api/shop/buy`, {
             method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-                'Content-Type': 'application/json'
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ itemId })
         });
         
         const result = await response.json();
         
-        if (response.ok) {
-            ui.showSuccessAlert('ขอบคุณที่อุดหนุน!', result.message);
-            // Update Local Data
+        if (result.success) {
+            // 1. FIX: Update Local State (Use currentGameData, not state)
             currentGameData.coins = result.newBalance;
             currentGameData.avatar = result.avatar;
-            updateGameUI(); // Updates Coin UI and Avatar immediately
-            // ui.hideModal('shop-modal');
             
-            // Reload map to show new look to others (optional)
-            // if(window.location.reload) setTimeout(() => window.location.reload(), 1500);
+            // Sync to localStorage for other parts of the app
+            localStorage.setItem('userGameData_temp', JSON.stringify(currentGameData));
+
+            // 2. FIX: Update Global UI (Use updateGameUI, not updateUI)
+            updateGameUI(); 
+            
+            // 3. Update Shop UI - Coin Balance
+            document.querySelectorAll('.coin-balance-display').forEach(el => el.innerText = result.newBalance.toLocaleString());
+            
+            // 4. Update Shop UI - Button State (Instant Feedback)
+            if (buyBtn) {
+                buyBtn.outerHTML = `
+                    <button disabled class="w-full py-2 rounded-lg text-xs font-bold bg-gray-100 text-green-600 border border-gray-200 cursor-default flex justify-center items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        มีแล้ว
+                    </button>
+                `;
+            }
+
+            // 5. Update Equipped Button (If auto-equipped)
+            // If the item bought was a skin/shirt, we need to refresh the list to show "Equipped" or "Wear"
+            // For simplicity, we just reload the shop modal content silently or let the user click 'Wear' next time.
+            // But since the API returns the new avatar, it might be auto-equipped.
+            // Let's refresh the shop items grid to be safe and accurate.
+            const shopResponse = await fetch(`${BASE_URL}/api/shop`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const shopData = await shopResponse.json();
+            renderShopItems(shopData.items, shopData.owned);
+
+            // 6. Success Alert
+            Swal.fire({
+                icon: 'success',
+                title: 'เรียบร้อย!',
+                text: result.message,
+                timer: 1500,
+                showConfirmButton: false,
+                backdrop: `rgba(0,0,0,0.4)`
+            });
+
         } else {
-            ui.showInfoAlert('ซื้อไม่ได้', result.message);
+            // Failed
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'ไม่สำเร็จ', 
+                text: result.message,
+                confirmButtonColor: '#d33'
+            });
+            // Reset Button
+            if (buyBtn) {
+                buyBtn.innerHTML = originalText;
+                buyBtn.disabled = false;
+            }
         }
-    } catch (e) {
-        ui.showErrorAlert('เกิดข้อผิดพลาด');
+    } catch (error) {
+        console.error("Buy Error:", error);
+        if (buyBtn) {
+            buyBtn.innerHTML = originalText;
+            buyBtn.disabled = false;
+        }
     }
 }
 
