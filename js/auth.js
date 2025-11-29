@@ -55,11 +55,16 @@ function updateUIforAuthState() {
     if (window.lucide) lucide.createIcons();
 }
 
+export function getCurrentUserId() {
+    if (!state.currentUser) return null;
+    return state.currentUser.id || state.currentUser._id || null;
+}
+
 async function handleLogin(e, credentials = null) {
     if (e) e.preventDefault();
-
+    
     const loginBtn = document.getElementById('login-submit-btn');
-    const originalBtnContent = loginBtn.innerHTML;
+    const originalBtnContent = loginBtn ? loginBtn.innerHTML : 'เข้าสู่ระบบ';
     let username, password;
 
     if (credentials) {
@@ -70,7 +75,7 @@ async function handleLogin(e, credentials = null) {
         password = document.getElementById('login-password').value;
     }
 
-    if (!credentials) {
+    if (!credentials && loginBtn) { 
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<div class="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mx-auto"></div>';
     }
@@ -79,19 +84,27 @@ async function handleLogin(e, credentials = null) {
         const response = await api.loginUser(username, password);
         if (response.success) {
             state.authToken = response.token;
-            state.currentUser = response.user;
+            state.currentUser = response.user; // This now includes { id, username, role }
+            
             localStorage.setItem('authToken', state.authToken);
             localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
+            
+            // Refresh UI State
             updateUIforAuthState();
-
-            ui.hideAllModals();
-
-            // Welcome Alert
+            
+            // Sync Map to show 'Mine' signs immediately
+            if(window.mapManager && window.mapManager.loadSigns) {
+                window.mapManager.loadSigns();
+            }
+            if(window.mapManager && window.mapManager.refreshUserMarker) {
+                window.mapManager.refreshUserMarker();
+            }
+            
+            ui.hideAllModals(); 
+            
             if (!credentials) {
                 ui.showSuccessAlert('ยินดีต้อนรับ!', `สวัสดีคุณ ${state.currentUser.username}`);
             }
-
-            initGameService();
         }
     } catch (error) {
         console.error("Login failed:", error.message);
@@ -99,7 +112,7 @@ async function handleLogin(e, credentials = null) {
             ui.showErrorAlert(error.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
         }
     } finally {
-        if (!credentials) {
+        if (!credentials && loginBtn) {
             loginBtn.disabled = false;
             loginBtn.innerHTML = originalBtnContent;
         }

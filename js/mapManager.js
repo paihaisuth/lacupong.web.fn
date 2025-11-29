@@ -89,24 +89,38 @@ async function handleGeolocationError(error) {
 function updateUserLocationOnMap(location) {
     if (window.userMarker) map.removeLayer(window.userMarker);
     
-    let avatarSvg = '<div class="w-full h-full bg-blue-500 rounded-full"></div>';
-    if(window.gameService && window.gameService.generateAvatarSVG) {
-        const gameData = JSON.parse(localStorage.getItem('userGameData_temp')) || { avatar: { skin: '#e0ac69', shirt: '#3b82f6' } }; 
-        avatarSvg = window.gameService.generateAvatarSVG(gameData.avatar);
+    // 1. DEFAULT GUEST AVATAR (Gray/Neutral)
+    let avatarSvg = `
+        <div class="w-full h-full bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </div>
+    `;
+
+    // 2. IF LOGGED IN: Get Real Avatar
+    if(auth.isLoggedIn() && window.gameService && window.gameService.generateAvatarSVG) {
+        // Try to get from temp storage (synced by gameService)
+        const gameData = JSON.parse(localStorage.getItem('userGameData_temp')); 
+        if (gameData && gameData.avatar) {
+            avatarSvg = window.gameService.generateAvatarSVG(gameData.avatar);
+        }
     }
 
+    // 3. Create Marker
     window.userMarker = L.marker([location.lat, location.lng], {
         icon: L.divIcon({
             className: 'user-location-marker',
-            // ADDED: marker-scalable wrapper
+            // ADDED: marker-scalable class
             html: `
                 <div class="marker-scalable">
                     <div class="relative w-14 h-14">
-                        <div class="absolute inset-0 bg-blue-500/30 rounded-full animate-ping"></div>
-                        <div class="absolute inset-1 bg-white rounded-full border-4 border-blue-500 shadow-lg overflow-hidden flex items-center justify-center">
+                        <!-- Pulse Effect (Green if logged in, Blue if guest) -->
+                        <div class="absolute inset-0 ${auth.isLoggedIn() ? 'bg-green-500/30' : 'bg-blue-500/30'} rounded-full animate-ping"></div>
+                        <!-- Main Body -->
+                        <div class="absolute inset-1 bg-white rounded-full border-4 ${auth.isLoggedIn() ? 'border-green-500' : 'border-gray-400'} shadow-lg overflow-hidden flex items-center justify-center">
                             ${avatarSvg}
                         </div>
-                        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow border border-white">
+                        <!-- Label -->
+                        <div class="absolute -top-3 left-1/2 -translate-x-1/2 ${auth.isLoggedIn() ? 'bg-green-600' : 'bg-gray-600'} text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow border border-white">
                             YOU
                         </div>
                     </div>
@@ -115,10 +129,13 @@ function updateUserLocationOnMap(location) {
             iconSize: [56, 56], 
             iconAnchor: [28, 28]
         }),
-        zIndexOffset: 1000,
+        zIndexOffset: 1000, 
         interactive: false
     }).addTo(map);
     
+    // Scale update
+    updateMarkerIconContentScaling();
+
     if(!window.initialZoomDone) {
         map.setView([location.lat, location.lng], 16);
         window.initialZoomDone = true;
@@ -298,38 +315,74 @@ export async function loadSigns() {
         const response = await fetch(`${BASE_URL}/api/signs`);
         const signs = await response.json();
         
+        // 1. Get Current User ID (Handle different storage formats)
+         const currentUserId = auth.getCurrentUserId();
+        // const userObj = JSON.parse(localStorage.getItem('currentUser'));
+        // if (userObj) {
+        //     // MongoDB ID usually in _id or id
+        //     currentUserId = userObj.id || userObj._id;
+        // }
+
         signMarkers.forEach(m => map.removeLayer(m));
         signMarkers = [];
 
         signs.forEach(sign => {
             const avatarSvg = window.gameService.generateAvatarSVG(sign.avatar);
             
-            // --- FIX: เลือกข้อความที่จะแสดงตามประเภท ---
-            let labelText = sign.message; // สำหรับ Normal
-            if (sign.type === 'vote' || sign.type === 'poll') {
-                labelText = sign.pollTitle; // สำหรับ Vote/Poll
+            // 2. Robust Ownership Check
+            // Backend sends 'userId' which might be populated object OR raw string depending on pipeline
+            // We handle both.
+            let signOwnerId = sign.userId;
+            if (signOwnerId && typeof signOwnerId === 'object') {
+                signOwnerId = signOwnerId._id || signOwnerId.id; // Extract ID from object
             }
-            // ป้องกัน undefined กรณีข้อมูลผิดพลาด
+            
+            // Convert both to string for comparison
+            const isMine = currentUserId && signOwnerId && (String(signOwnerId) === String(currentUserId));
+            //console.log("SignOwnerId: ", signOwnerId, "currentUserId: ", currentUserId)
+            
+            // --- Label Text ---
+            let labelText = sign.message; 
+            if (sign.type === 'vote' || sign.type === 'poll') {
+                labelText = sign.pollTitle; 
+            }
             if (!labelText) labelText = '...';
 
-            // กำหนดไอคอนแสดงประเภทเล็กๆ (Emoji)
             let typeIcon = '💬';
             if (sign.type === 'vote') typeIcon = '🗳️';
             if (sign.type === 'poll') typeIcon = '📊';
 
+            const iconClassName = `custom-sign-marker ${isMine ? 'my-sign' : ''}`;
+            const zIndex = isMine ? 1000 : 100;
+
+            // --- STYLING LOGIC ---
+            // Border: Blue for mine, White for others
+            const borderStyle = isMine 
+                ? 'border: 3px solid #3B82F6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);' 
+                : 'border: 2px solid white;';
+            
+            // Label: Blue BG/White Text for mine
+            const labelStyle = isMine 
+                ? 'background-color: #2563EB; color: white; border: 1px solid #1D4ED8; font-weight: bold; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.4);' 
+                : 'background-color: rgba(255,255,255,0.95); color: #1F2937; border: 1px solid #F3F4F6;';
+
             const icon = L.divIcon({
-                className: 'custom-sign-marker',
+                className: iconClassName,
                 html: `
-                    <div class="marker-scalable" style="transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); will-change: transform;">
-                        <div class="relative w-12 h-12">
-                            <div class="absolute inset-0 bg-white rounded-full border-2 border-white shadow-md overflow-hidden">
+                    <div class="marker-scalable">
+                        <div class="relative w-12 h-12 transition-transform duration-200 hover:scale-110">
+                            <!-- Avatar Circle -->
+                            <div class="absolute inset-0 bg-white rounded-full shadow-md overflow-hidden" style="${borderStyle}">
                                 ${avatarSvg}
                             </div>
+                            
+                            <!-- Icon Badge -->
                             <div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 border border-gray-200 shadow-sm text-[10px] w-5 h-5 flex items-center justify-center">
                                 ${typeIcon}
                             </div>
-                            <!-- FIX: ใช้ labelText แทน sign.message และจำกัดความยาว -->
-                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur px-2 py-0.5 rounded shadow text-[10px] font-bold whitespace-nowrap border border-gray-100 max-w-[120px] overflow-hidden text-ellipsis">
+                            
+                            <!-- Label Title (Styled) -->
+                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-lg shadow text-[10px] whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis backdrop-blur-sm" style="${labelStyle}">
                                 ${labelText}
                             </div>
                         </div>
@@ -339,22 +392,22 @@ export async function loadSigns() {
                 iconAnchor: [24, 24]
             });
 
-            const marker = L.marker([sign.lat, sign.lng], { icon }).addTo(map);
+            const marker = L.marker([sign.lat, sign.lng], { icon, zIndexOffset: zIndex }).addTo(map);
             marker.on('click', () => openSignModal(sign));
             signMarkers.push(marker);
         });
         
-        // อัปเดตขนาดไอคอนหลังจากโหลดเสร็จ
         updateMarkerIconContentScaling();
     } catch (error) {
         console.error("Load Signs Error", error);
     }
 }
 
-// FILE: js/mapManager.js
-
-// FILE: js/mapManager.js
-
+export function refreshUserMarker() {
+    if (userLocation) {
+        updateUserLocationOnMap(userLocation);
+    }
+}
 
 async function openSignModal(basicSignData) {
     ui.showLoadingMessage();
@@ -391,7 +444,7 @@ async function openSignModal(basicSignData) {
     } else {
         const pollOptions = sign.pollOptions || [];
         const totalVotes = pollOptions.reduce((sum, opt) => sum + (opt.count !== undefined ? opt.count : opt.voters.length), 0);
-        const currentUserId = window.gameService.getCurrentUserId ? window.gameService.getCurrentUserId() : null;
+        const currentUserId =  auth.getCurrentUserId();
 
         const optionsHtml = pollOptions.map((opt, idx) => {
             const count = opt.count !== undefined ? opt.count : opt.voters.length;
@@ -863,7 +916,7 @@ export function setupActionHandlers() {
                 loadSigns()
             ]);
             
-            console.log("Map and Profiles refreshed");
+            //console.log("Map and Profiles refreshed");
         } catch (error) {
             console.error("Error during refresh process:", error);
         } finally {

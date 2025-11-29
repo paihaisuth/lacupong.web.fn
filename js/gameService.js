@@ -2,6 +2,7 @@
 import { BASE_URL } from './config.js';
 import * as auth from './auth.js';
 import * as ui from './uiManager.js';
+import { refreshUserMarker } from './mapManager.js';
 
 // --- DEFINITIONS FOR SVG GRADIENTS ---
 const SVG_DEFS = `
@@ -61,6 +62,20 @@ async function saveAvatarConfig(newConfig) {
         }
     } catch (e) { ui.showErrorAlert('บันทึกไม่สำเร็จ'); }
 }
+
+export function getCurrentUserId() {
+    try {
+        const userStr = localStorage.getItem('currentUser');
+        if (!userStr) return null;
+        
+        const user = JSON.parse(userStr);
+        // Check commonly used ID fields
+        return user.id || user._id || user.userId || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 
 export async function claimDailyReward() {
     if (!auth.isLoggedIn()) return ui.showModal('login-modal');
@@ -169,6 +184,9 @@ export function generateAvatarSVG(config) {
 }
 
 function updateGameUI() {
+    // Sync to Storage for Map Manager to read
+    localStorage.setItem('userGameData_temp', JSON.stringify(currentGameData));
+
     const topAvatar = document.getElementById('top-avatar-display');
     if (topAvatar) topAvatar.innerHTML = generateAvatarSVG(currentGameData.avatar);
     
@@ -184,6 +202,9 @@ function updateGameUI() {
 
     const editorPreview = document.getElementById('avatar-editor-preview');
     if (editorPreview) editorPreview.innerHTML = generateAvatarSVG(currentGameData.avatar);
+
+    // Trigger Map Marker Update
+    refreshUserMarker();
 }
 
 // --- EDITOR LOGIC ---
